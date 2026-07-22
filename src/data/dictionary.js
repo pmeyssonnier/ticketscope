@@ -26,7 +26,7 @@ export const PRODUCT_DICTIONARY = [
   { id: 'mix-olives', normalized: "Mélange d'olives apéritif", coicop: '01.1.7', category: 'Apéritif / Olives', keywords: ['mix ver no oli', 'mix ver', 'mix olives'] },
   { id: 'tomates-vrac', normalized: 'Tomates fraîches', coicop: '01.1.7', category: 'Légumes', keywords: ['tomates charnues', 'tom charnue', 'tomate charnue'] },
   { id: 'mesclun', normalized: 'Mesclun', coicop: '01.1.7', category: 'Légumes', keywords: ['mesclun'] },
-  { id: 'tomates-cerises', normalized: 'Tomates cerises', coicop: '01.1.7', category: 'Légumes', keywords: ['tomates cerises', 'tomate cerise'] },
+  { id: 'tomates-cerises', normalized: 'Tomates cerises', coicop: '01.1.7', category: 'Légumes', keywords: ['tomates cerises', 'tomate cerise', 'tom cerises', 'tom cerise'] },
 
   // --- Fruits (01.1.6) ---
   { id: 'pomme', normalized: 'Pomme bio', coicop: '01.1.6', category: 'Fruits', keywords: ['pomme'] },
@@ -68,7 +68,7 @@ export const PRODUCT_DICTIONARY = [
   // --- Produits alimentaires divers (01.1.9) ---
   { id: 'chips-camembert', normalized: 'Chips Camembert', coicop: '01.1.9', category: 'Snacks', keywords: ['chips camembert', 'chips'] },
   { id: 'grissini', normalized: 'Grissini', coicop: '01.1.9', category: 'Snacks', keywords: ['grissini'] },
-  { id: 'sauce-jambon', normalized: 'Sauce au jambon', coicop: '01.1.9', category: 'Produits alimentaires divers', keywords: ['sauce jambon'] },
+  { id: 'sauce-jambon', normalized: 'Sauce au jambon', coicop: '01.1.9', category: 'Produits alimentaires divers', keywords: ['sauce jambon', 'sauc ham', 'did sauc'] },
   { id: 'ravioli', normalized: 'Ravioli frais Bertagni', brand: 'Bertagni', coicop: '01.1.9', category: 'Plats préparés', keywords: ['ravioli', 'bertagni'] },
   { id: 'mccain', normalized: 'Frites McCain Airfry', brand: 'McCain', coicop: '01.1.9', category: 'Surgelés', keywords: ['mccain', 'airfry'] },
   { id: 'tarama', normalized: 'Tarama', brand: 'Dili', coicop: '01.1.9', category: 'Épicerie', keywords: ['tarama'] },

@@ -69,6 +69,18 @@ describe('classifyItems', () => {
     expect(dubai.coicop).toBe('01.1.8')
   })
 
+  it('tolère les libellés OCR abrégés du ticket Proxy', () => {
+    const raws = [
+      { raw: '400GR TOM.CERISES', coicop: '01.1.7' },
+      { raw: '3OO0ML DID SAUC HAM', coicop: '01.1.9' },
+      { raw: 'AMERICIAN MARTINO', coicop: '01.1.2' },
+    ]
+    const out = classifyItems(
+      raws.map((r) => ({ raw: r.raw, quantity: 1, unitPrice: 1, gross: 1, discount: 0, net: 1 })),
+    )
+    out.forEach((c, i) => expect(c.coicop).toBe(raws[i].coicop))
+  })
+
   it('marque les produits inconnus pour révision', () => {
     const [res] = classifyItems([
       { raw: 'PRODUIT XYZ INCONNU', quantity: 1, unitPrice: 1, gross: 1, discount: 0, net: 1 },
