@@ -1,0 +1,25 @@
+{
+  "name": "ticketscope-be",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "TicketScope BE — analyse de tickets de caisse avec normalisation des produits et classification COICOP (PWA React).",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.7",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.8",
+    "vite-plugin-pwa": "^0.20.5",
+    "vitest": "^2.1.2"
+  }
+}
