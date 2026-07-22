@@ -62,10 +62,19 @@ describe('classifyItems', () => {
     expect(tarama.coicop).toBe('01.1.9')
   })
 
+  it('classe le mélange d\'olives (Mix Ver) en 01.1.7 et la pâte de Dubaï en 01.1.8', () => {
+    const olives = classified.find((i) => /mix ver/i.test(i.raw))
+    expect(olives.coicop).toBe('01.1.7')
+    const dubai = classified.find((i) => /dubaich/i.test(i.raw))
+    expect(dubai.coicop).toBe('01.1.8')
+  })
+
   it('marque les produits inconnus pour révision', () => {
-    const unknown = classified.find((i) => /dubaich/i.test(i.raw))
-    expect(unknown.coicop).toBeNull()
-    expect(unknown.needsReview).toBe(true)
+    const [res] = classifyItems([
+      { raw: 'PRODUIT XYZ INCONNU', quantity: 1, unitPrice: 1, gross: 1, discount: 0, net: 1 },
+    ])
+    expect(res.coicop).toBeNull()
+    expect(res.needsReview).toBe(true)
   })
 
   it('classe la majorité des lignes automatiquement', () => {

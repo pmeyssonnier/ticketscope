@@ -23,6 +23,7 @@ export const PRODUCT_DICTIONARY = [
   // --- Légumes (01.1.7) ---
   { id: 'oignon', normalized: 'Oignon rouge', coicop: '01.1.7', category: 'Légumes', keywords: ['oignon'] },
   { id: 'gazpacho', normalized: 'Gazpacho', coicop: '01.1.7', category: 'Légumes', keywords: ['gazpacho'] },
+  { id: 'mix-olives', normalized: "Mélange d'olives apéritif", coicop: '01.1.7', category: 'Apéritif / Olives', keywords: ['mix ver no oli', 'mix ver', 'mix olives'] },
   { id: 'tomates-vrac', normalized: 'Tomates fraîches', coicop: '01.1.7', category: 'Légumes', keywords: ['tomates charnues', 'tom charnue', 'tomate charnue'] },
   { id: 'mesclun', normalized: 'Mesclun', coicop: '01.1.7', category: 'Légumes', keywords: ['mesclun'] },
   { id: 'tomates-cerises', normalized: 'Tomates cerises', coicop: '01.1.7', category: 'Légumes', keywords: ['tomates cerises', 'tomate cerise'] },
@@ -55,6 +56,8 @@ export const PRODUCT_DICTIONARY = [
   // --- Sucre, confiserie, petit-déjeuner, biscuits, pâtisserie (01.1.8) ---
   { id: 'jord-crunch', normalized: 'Céréales Jord Crunch Choco', brand: 'Jord', coicop: '01.1.8', category: 'Petit-déjeuner', keywords: ['jord crunch', 'jord'] },
   { id: 'chocolat-bio', normalized: 'Chocolat bio', coicop: '01.1.8', category: 'Confiserie', keywords: ['chocolat bio'] },
+  { id: 'gusto-dubaich', normalized: 'Pâte de chocolat de Dubaï', brand: 'Gusto', coicop: '01.1.8', category: 'Confiserie', keywords: ['gusto dubaich', 'dubaich'] },
+  { id: 'nocciolat', normalized: 'Pâte à tartiner chocolat bio', coicop: '01.1.8', category: 'Confiserie', keywords: ['nocciolat'] },
   { id: 'crunchy-choco', normalized: 'Crunchy Choco', coicop: '01.1.8', category: 'Petit-déjeuner', keywords: ['crunchy choco', 'crunchy'] },
   { id: 'biscuits-sables', normalized: 'Biscuits sablés au beurre', coicop: '01.1.8', category: 'Biscuits', keywords: ['biscuits sables', 'sables beurre', 'sable beurre'] },
   { id: 'eclair', normalized: 'Éclair au chocolat', coicop: '01.1.8', category: 'Pâtisserie', keywords: ['eclair'] },
