@@ -4,16 +4,18 @@ import { parseTicket } from '../lib/parser.js'
 import { classifyItems } from '../lib/classifier.js'
 import { loadLearned } from '../lib/storage.js'
 import { uid } from '../lib/format.js'
-import { extractText } from '../lib/ocr.js'
+import { extractText, extractTextMulti } from '../lib/ocr.js'
 
 export default function Importer({ onDraft }) {
   const [text, setText] = useState('')
+  const [queue, setQueue] = useState([]) // [{ id, url, file }]
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState(null)
   const [error, setError] = useState('')
   const [enhance, setEnhance] = useState(true)
   const [preview, setPreview] = useState('')
-  const photoRef = useRef(null)
+  const cameraRef = useRef(null)
+  const galleryRef = useRef(null)
   const pdfRef = useRef(null)
   const txtRef = useRef(null)
 
@@ -39,28 +41,71 @@ export default function Importer({ onDraft }) {
     })
   }
 
-  async function handleScan(e) {
+  function addToQueue(fileList) {
+    const files = Array.from(fileList || []).filter((f) => f.type.startsWith('image/'))
+    if (!files.length) return
+    setError('')
+    setQueue((q) => [...q, ...files.map((file) => ({ id: uid('ph'), url: URL.createObjectURL(file), file }))])
+  }
+
+  function removeFromQueue(id) {
+    setQueue((q) => {
+      const item = q.find((p) => p.id === id)
+      if (item) URL.revokeObjectURL(item.url)
+      return q.filter((p) => p.id !== id)
+    })
+  }
+
+  function clearQueue() {
+    setQueue((q) => {
+      q.forEach((p) => URL.revokeObjectURL(p.url))
+      return []
+    })
+  }
+
+  async function readQueue() {
+    if (!queue.length) return
+    setError('')
+    setPreview('')
+    setBusy(true)
+    setProgress({ label: 'Préparation…', progress: 0 })
+    try {
+      const files = queue.map((p) => p.file)
+      const { text: extracted } =
+        files.length === 1
+          ? await extractText(files[0], setProgress, { enhance, onPreview: setPreview })
+          : await extractTextMulti(files, setProgress, { enhance, onPreview: setPreview })
+      const clean = (extracted || '').trim()
+      setText(clean)
+      clearQueue()
+      if (clean) analyze(clean)
+      else setError("Aucun texte n'a pu être lu. Réessayez avec des photos plus nettes, bien cadrées et qui se recouvrent légèrement.")
+    } catch (err) {
+      console.error(err)
+      setError('La lecture a échoué. Vérifiez votre connexion au premier usage (chargement du moteur), puis réessayez.')
+    } finally {
+      setBusy(false)
+      setProgress(null)
+    }
+  }
+
+  async function handlePdf(e) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
     setError('')
     setPreview('')
     setBusy(true)
-    setProgress({ label: 'Préparation…', progress: 0 })
+    setProgress({ label: 'Lecture du PDF…', progress: 0 })
     try {
-      const { text: extracted } = await extractText(file, setProgress, {
-        enhance,
-        onPreview: setPreview,
-      })
+      const { text: extracted } = await extractText(file, setProgress, { enhance, onPreview: setPreview })
       const clean = (extracted || '').trim()
       setText(clean)
       if (clean) analyze(clean)
-      else setError("Aucun texte n'a pu être lu. Réessayez avec une photo plus nette et bien cadrée.")
+      else setError("Aucun texte n'a pu être lu dans ce PDF.")
     } catch (err) {
       console.error(err)
-      setError(
-        "La lecture a échoué. Vérifiez votre connexion au premier usage (chargement du moteur), puis réessayez.",
-      )
+      setError('La lecture du PDF a échoué.')
     } finally {
       setBusy(false)
       setProgress(null)
@@ -86,34 +131,71 @@ export default function Importer({ onDraft }) {
     <div className="card">
       <h2>Importer un ticket</h2>
       <p className="hint">
-        Photographiez un ticket, importez un PDF ou collez son texte.
-        L'application lit le ticket, extrait les produits, les normalise et leur
-        attribue un code COICOP.
+        Photographiez le ticket (une ou plusieurs photos pour les longs tickets),
+        importez un PDF ou collez son texte. L'application lit le ticket, extrait
+        les produits, les normalise et leur attribue un code COICOP.
       </p>
 
       <div className="import-actions">
-        <button className="btn primary" onClick={() => photoRef.current?.click()} disabled={busy}>
-          📷 Photographier / choisir une image
+        <button className="btn primary" onClick={() => cameraRef.current?.click()} disabled={busy}>
+          📷 {queue.length ? 'Ajouter une photo' : 'Photographier'}
+        </button>
+        <button className="btn" onClick={() => galleryRef.current?.click()} disabled={busy}>
+          🖼️ Galerie
         </button>
         <button className="btn" onClick={() => pdfRef.current?.click()} disabled={busy}>
-          📄 Importer un PDF
+          📄 PDF
         </button>
         <button className="btn" onClick={() => txtRef.current?.click()} disabled={busy}>
-          📃 Fichier texte
-        </button>
-        <button className="btn" onClick={() => setText(SAMPLE_TICKET_TEXT)} disabled={busy}>
-          🧾 Exemple
+          📃 Texte
         </button>
       </div>
 
-      <input ref={photoRef} type="file" accept="image/*" capture="environment" onChange={handleScan} style={{ display: 'none' }} />
-      <input ref={pdfRef} type="file" accept="application/pdf,.pdf" onChange={handleScan} style={{ display: 'none' }} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={(e) => { addToQueue(e.target.files); e.target.value = '' }} style={{ display: 'none' }} />
+      <input ref={galleryRef} type="file" accept="image/*" multiple onChange={(e) => { addToQueue(e.target.files); e.target.value = '' }} style={{ display: 'none' }} />
+      <input ref={pdfRef} type="file" accept="application/pdf,.pdf" onChange={handlePdf} style={{ display: 'none' }} />
       <input ref={txtRef} type="file" accept=".txt,.csv,text/plain" onChange={onTxt} style={{ display: 'none' }} />
 
       <label className="toggle">
         <input type="checkbox" checked={enhance} onChange={(e) => setEnhance(e.target.checked)} disabled={busy} />
         <span>✨ Améliorer l'image avant lecture <span className="muted">(contraste, ombres, redressement — recommandé)</span></span>
       </label>
+
+      {queue.length > 0 && (
+        <div className="photo-queue">
+          <div className="pq-head">
+            <b>{queue.length} photo{queue.length > 1 ? 's' : ''}</b>
+            <span className="muted"> — dans l'ordre du haut vers le bas du ticket</span>
+          </div>
+          <div className="pq-grid">
+            {queue.map((p, i) => (
+              <div className="pq-item" key={p.id}>
+                <img src={p.url} alt={`Photo ${i + 1}`} />
+                <span className="pq-num">{i + 1}</span>
+                {!busy && (
+                  <button className="pq-del" onClick={() => removeFromQueue(p.id)} title="Retirer">
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="btn-row" style={{ marginTop: 10 }}>
+            <button className="btn primary" onClick={readQueue} disabled={busy}>
+              🔎 Lire {queue.length > 1 ? `les ${queue.length} photos` : 'la photo'} →
+            </button>
+            <button className="btn" onClick={clearQueue} disabled={busy}>
+              Vider
+            </button>
+          </div>
+          {queue.length > 1 && (
+            <p className="inline-note">
+              Astuce : laissez un léger recouvrement entre deux photos — les
+              lignes communes sont détectées et non dupliquées.
+            </p>
+          )}
+        </div>
+      )}
 
       {busy && (
         <div className="ocr-progress">
@@ -155,6 +237,9 @@ export default function Importer({ onDraft }) {
         <button className="btn primary" onClick={() => analyze()} disabled={!text.trim() || busy}>
           Analyser le ticket →
         </button>
+        <button className="btn" onClick={() => setText(SAMPLE_TICKET_TEXT)} disabled={busy}>
+          🧾 Exemple
+        </button>
         {text && !busy && (
           <button className="btn" onClick={() => { setText(''); setError('') }}>
             Effacer
@@ -163,10 +248,10 @@ export default function Importer({ onDraft }) {
       </div>
 
       <p className="inline-note">
-        🔒 Photo, PDF et OCR sont traités <b>entièrement sur votre appareil</b> —
-        aucune image n'est envoyée sur Internet. Au tout premier usage, le moteur
-        OCR (~3 Mo) et le modèle français se chargent puis restent disponibles
-        hors connexion.
+        🔒 Photos, PDF et OCR sont traités <b>entièrement sur votre appareil</b> —
+        rien n'est envoyé sur Internet. Au tout premier usage, le moteur OCR
+        (~3 Mo) et le modèle français se chargent puis restent disponibles hors
+        connexion.
       </p>
     </div>
   )

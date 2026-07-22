@@ -583,6 +583,74 @@ table.data td .raw {
   flex: none;
 }
 
+.photo-queue {
+  border: 1px dashed var(--slate-300);
+  border-radius: 12px;
+  padding: 12px;
+  margin: 4px 0 10px;
+  background: var(--slate-50);
+}
+
+.pq-head {
+  font-size: 0.82rem;
+  margin-bottom: 10px;
+}
+
+.pq-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.pq-item {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--slate-200);
+  background: var(--white);
+}
+
+.pq-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pq-num {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: var(--teal-700);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pq-del {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  border: none;
+  background: rgba(15, 23, 42, 0.72);
+  color: #fff;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .ocr-preview {
   margin: 10px 0;
   display: flex;

@@ -9,6 +9,7 @@
 // Les librairies sont importées à la demande pour ne pas alourdir le démarrage.
 
 import { preprocessImage } from './imagePrep.js'
+import { stitchOcrTexts } from './stitch.js'
 
 const OCR_BASE = '/tesseract'
 
@@ -165,4 +166,21 @@ export async function extractText(file, onProgress, opts = {}) {
   // Repli : lecture texte brute.
   const text = await file.text()
   return { text, kind: 'text' }
+}
+
+// Plusieurs photos d'un même (long) ticket : OCR de chaque tranche puis
+// recollage (les tranches doivent se suivre du haut vers le bas).
+export async function extractTextMulti(files, onProgress, opts = {}) {
+  const texts = []
+  for (let i = 0; i < files.length; i += 1) {
+    const n = `Photo ${i + 1}/${files.length}`
+    // eslint-disable-next-line no-await-in-loop
+    const { text } = await extractText(
+      files[i],
+      (p) => onProgress?.({ label: `${n} — ${p.label}`, progress: p.progress }),
+      opts,
+    )
+    texts.push(text)
+  }
+  return { text: stitchOcrTexts(texts), kind: 'multi' }
 }

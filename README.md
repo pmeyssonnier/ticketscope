@@ -20,6 +20,10 @@ fonctionne **hors connexion** une fois installée.
   **entièrement dans le navigateur** — aucune image n'est envoyée sur Internet.
   Les PDF « numériques » sont lus via leur texte intégré ; les PDF scannés
   passent par l'OCR.
+- 🧵 **Multi-photo pour les longs tickets** : capturez le ticket en plusieurs
+  photos (du haut vers le bas, avec un léger recouvrement). Chaque tranche est
+  lue par OCR puis **recollée automatiquement** — les lignes communes au
+  recouvrement sont détectées et **non dupliquées** (voir `src/lib/stitch.js`).
 - ✨ **Pré-traitement d'image** avant OCR (activable) : correction d'orientation
   EXIF, redimensionnement, niveaux de gris, **égalisation de l'éclairage
   (suppression des ombres)**, étirement de contraste, débruitage et
@@ -67,7 +71,9 @@ src/
   lib/
     format.js        Normalisation de texte, parsing des montants, formats € / dates
     imagePrep.js     Pré-traitement image (ombres, contraste, deskew) avant OCR
+    stitch.js        Recollage de plusieurs photos d'un long ticket (dédup recouvrement)
     ocr.js           OCR image (Tesseract.js) + lecture PDF (pdf.js) → texte
+    stitch.test.js   Tests unitaires du recollage
     parser.js        Texte du ticket → enseigne, date, lignes, totaux
     classifier.js    Ligne → produit normalisé + COICOP + confiance
     storage.js       Persistance locale (tickets + base apprise)
@@ -93,9 +99,14 @@ Le **parseur est découplé de la source d'entrée** (`ocr.js` → texte →
   débruitage, redressement). Désactivable via une case à cocher.
 - **PDF** : `pdf.js` lit d'abord le texte intégré (PDF numérique) ; si la page
   est scannée, elle est rendue en image, **pré-traitée**, puis passée à l'OCR.
+- **Multi-photo** (`stitch.js`) : pour un long ticket, chaque photo est lue
+  séparément puis les textes sont recollés en détectant les lignes communes au
+  recouvrement (similarité de Dice sur bigrammes), afin de ne pas dupliquer.
 - Le service worker met ces actifs en cache à la première utilisation
   (`runtimeCaching`), de sorte que l'OCR fonctionne ensuite **hors connexion**.
   Aucune image ni PDF ne quitte l'appareil.
+
+![Capture multi-photo d'un long ticket](docs/05-multiphoto.png)
 
 ### Base de connaissances & COICOP
 
