@@ -29,3 +29,8 @@ logs/
 .env
 .env.*
 !.env.example
+
+# OCR runtime assets copied from node_modules by scripts/prepare-ocr.mjs
+# (regenerated on install/build; the language model in lang/ IS versioned)
+public/tesseract/*.js
+public/tesseract/*.wasm

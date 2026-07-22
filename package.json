@@ -5,15 +5,18 @@
   "type": "module",
   "description": "TicketScope BE — analyse de tickets de caisse avec normalisation des produits et classification COICOP (PWA React).",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "prepare-ocr": "node scripts/prepare-ocr.mjs",
+    "dev": "npm run prepare-ocr && vite",
+    "build": "npm run prepare-ocr && vite build",
     "preview": "vite preview",
     "test": "vitest run"
   },
   "dependencies": {
+    "pdfjs-dist": "^4.10.38",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.12.7",
+    "tesseract.js": "^5.1.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

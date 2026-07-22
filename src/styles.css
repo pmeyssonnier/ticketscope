@@ -509,3 +509,69 @@ table.data td .raw {
   color: var(--slate-500);
   margin-top: 8px;
 }
+
+/* --- Import actions / OCR progress --- */
+.import-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.import-actions .btn {
+  justify-content: center;
+  text-align: center;
+}
+
+.import-actions .btn.primary {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 560px) {
+  .import-actions {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .import-actions .btn.primary {
+    grid-column: 1 / -1;
+  }
+}
+
+.ocr-progress {
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+.ocr-label {
+  font-size: 0.82rem;
+  color: var(--teal-700);
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress {
+  height: 8px;
+  background: var(--slate-200);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress .bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal-600), var(--teal-500));
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.spin {
+  display: inline-block;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

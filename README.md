@@ -15,7 +15,11 @@ fonctionne **hors connexion** une fois installée.
 
 ## Fonctionnalités (V1)
 
-- 📷 **Import** d'un ticket par copier-coller ou fichier `.txt` (OCR photo/PDF prévu en V2).
+- 📷 **Import** d'un ticket par **photo** (OCR), **PDF**, fichier `.txt` ou
+  copier-coller. L'OCR image (Tesseract.js) et la lecture PDF (pdf.js) tournent
+  **entièrement dans le navigateur** — aucune image n'est envoyée sur Internet.
+  Les PDF « numériques » sont lus via leur texte intégré ; les PDF scannés
+  passent par l'OCR.
 - 🧠 **Extraction & normalisation** : détection de l'enseigne, de la date, des
   produits, quantités, prix unitaires et promotions.
   - regroupe les lignes identiques (`4 × 25,60`) ;
@@ -56,16 +60,32 @@ src/
     sampleTicket.js  Ticket de démonstration
   lib/
     format.js        Normalisation de texte, parsing des montants, formats € / dates
+    ocr.js           OCR image (Tesseract.js) + lecture PDF (pdf.js) → texte
     parser.js        Texte du ticket → enseigne, date, lignes, totaux
     classifier.js    Ligne → produit normalisé + COICOP + confiance
     storage.js       Persistance locale (tickets + base apprise)
     exporters.js     Exports Excel / CSV / JSON
     parser.test.js   Tests unitaires
   components/        Interface React (Import, Correction, Tableau de bord, Historique)
+scripts/
+  prepare-ocr.mjs    Copie le moteur Tesseract (worker + WASM) dans public/tesseract/
+public/tesseract/    Actifs OCR servis localement (aucun CDN) ; lang/ = modèle FR
 ```
 
-Le **parseur est découplé de la source d'entrée** : brancher un OCR (photo/PDF)
-en V2 revient à fournir du texte à `parseTicket()`.
+Le **parseur est découplé de la source d'entrée** (`ocr.js` → texte →
+`parseTicket()`), ce qui permet d'ajouter d'autres sources sans toucher au reste.
+
+### OCR & lecture PDF (100 % local)
+
+- **Images** : `Tesseract.js` (WebAssembly). Le worker et le cœur WASM sont
+  copiés depuis `node_modules` par `scripts/prepare-ocr.mjs` (lancé avant
+  `dev`/`build`) et servis depuis `public/tesseract/`. Le modèle français
+  `lang/fra.traineddata.gz` est versionné dans le dépôt.
+- **PDF** : `pdf.js` lit d'abord le texte intégré (PDF numérique) ; si la page
+  est scannée, elle est rendue en image puis passée à l'OCR.
+- Le service worker met ces actifs en cache à la première utilisation
+  (`runtimeCaching`), de sorte que l'OCR fonctionne ensuite **hors connexion**.
+  Aucune image ni PDF ne quitte l'appareil.
 
 ### Base de connaissances & COICOP
 
@@ -84,10 +104,10 @@ sont conservés uniquement dans le stockage local du navigateur (`localStorage`)
 
 ## Feuille de route
 
-- **V1 (cette version)** — import texte, extraction, classification COICOP,
-  correction, tableaux de bord, exports, PWA hors-ligne.
-- **V2** — OCR photo/PDF, apprentissage automatique, comparateur de prix entre
-  enseignes, synchronisation cloud.
+- **V1 (cette version)** — import **photo (OCR) / PDF / texte**, extraction,
+  classification COICOP, correction, tableaux de bord, exports, PWA hors-ligne.
+- **V2** — apprentissage automatique avancé, comparateur de prix entre
+  enseignes, synchronisation cloud, modèles OCR multilingues.
 - **V3** — scan de codes-barres (EAN), intégration bancaire, listes de courses,
   alertes prix, suivi nutritionnel et empreinte carbone, *Data Explorer* façon
   Power BI (tableaux croisés, requêtes en langage naturel).
