@@ -8,6 +8,8 @@
 //
 // Les librairies sont importées à la demande pour ne pas alourdir le démarrage.
 
+import { preprocessImage } from './imagePrep.js'
+
 const OCR_BASE = '/tesseract'
 
 let _workerPromise = null
@@ -58,9 +60,20 @@ function makeLogger(onProgress) {
   }
 }
 
-async function ocrImageLike(source, onProgress) {
+async function ocrImageLike(source, onProgress, opts = {}) {
+  let input = source
+  if (opts.enhance !== false) {
+    onProgress?.({ label: "Amélioration de l'image…", progress: 0 })
+    try {
+      input = await preprocessImage(source)
+      if (opts.onPreview) opts.onPreview(input.toDataURL('image/png'))
+    } catch (e) {
+      console.warn('Pré-traitement ignoré :', e)
+      input = source
+    }
+  }
   const worker = await getWorker(makeLogger(onProgress))
-  const { data } = await worker.recognize(source)
+  const { data } = await worker.recognize(input)
   return data.text || ''
 }
 
@@ -101,7 +114,7 @@ function itemsToLines(items) {
     .join('\n')
 }
 
-async function extractPdf(file, onProgress) {
+async function extractPdf(file, onProgress, opts = {}) {
   const pdfjs = await loadPdfjs()
   const buf = await file.arrayBuffer()
   const pdf = await pdfjs.getDocument({ data: buf }).promise
@@ -132,20 +145,21 @@ async function extractPdf(file, onProgress) {
     const ctx = canvas.getContext('2d')
     await page.render({ canvasContext: ctx, viewport }).promise
     onProgress?.({ label: `OCR du PDF scanné (page ${p}/${pdf.numPages})…`, progress: (p - 1) / pdf.numPages })
-    ocrTexts.push(await ocrImageLike(canvas, onProgress))
+    ocrTexts.push(await ocrImageLike(canvas, onProgress, opts))
   }
   return ocrTexts.join('\n')
 }
 
 // Point d'entrée unique : accepte une image ou un PDF, renvoie le texte.
-export async function extractText(file, onProgress) {
+// opts : { enhance?: boolean (déf. true), onPreview?: (dataUrl) => void }
+export async function extractText(file, onProgress, opts = {}) {
   const type = file.type || ''
   const name = (file.name || '').toLowerCase()
   if (type === 'application/pdf' || name.endsWith('.pdf')) {
-    return { text: await extractPdf(file, onProgress), kind: 'pdf' }
+    return { text: await extractPdf(file, onProgress, opts), kind: 'pdf' }
   }
   if (type.startsWith('image/') || /\.(png|jpe?g|webp|bmp|gif|tiff?)$/.test(name)) {
-    const text = await ocrImageLike(file, onProgress)
+    const text = await ocrImageLike(file, onProgress, opts)
     return { text, kind: 'image' }
   }
   // Repli : lecture texte brute.

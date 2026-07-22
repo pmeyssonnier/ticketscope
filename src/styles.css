@@ -565,6 +565,40 @@ table.data td .raw {
   transition: width 0.25s ease;
 }
 
+.toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--slate-700);
+  margin: 4px 0 8px;
+  cursor: pointer;
+  line-height: 1.35;
+}
+
+.toggle input {
+  width: auto;
+  margin-top: 2px;
+  accent-color: var(--teal-600);
+  flex: none;
+}
+
+.ocr-preview {
+  margin: 10px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.ocr-preview img {
+  max-width: 100%;
+  max-height: 240px;
+  border: 1px solid var(--slate-200);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
 .spin {
   display: inline-block;
   animation: spin 0.9s linear infinite;

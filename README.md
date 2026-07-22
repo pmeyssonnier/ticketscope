@@ -20,6 +20,12 @@ fonctionne **hors connexion** une fois installée.
   **entièrement dans le navigateur** — aucune image n'est envoyée sur Internet.
   Les PDF « numériques » sont lus via leur texte intégré ; les PDF scannés
   passent par l'OCR.
+- ✨ **Pré-traitement d'image** avant OCR (activable) : correction d'orientation
+  EXIF, redimensionnement, niveaux de gris, **égalisation de l'éclairage
+  (suppression des ombres)**, étirement de contraste, débruitage et
+  **redressement automatique (deskew)**. Sur une photo difficile (ombre + biais),
+  cela fait passer la lecture de **0 à plusieurs lignes** correctement reconnues.
+  Un aperçu montre l'image « telle que vue par l'OCR ».
 - 🧠 **Extraction & normalisation** : détection de l'enseigne, de la date, des
   produits, quantités, prix unitaires et promotions.
   - regroupe les lignes identiques (`4 × 25,60`) ;
@@ -60,6 +66,7 @@ src/
     sampleTicket.js  Ticket de démonstration
   lib/
     format.js        Normalisation de texte, parsing des montants, formats € / dates
+    imagePrep.js     Pré-traitement image (ombres, contraste, deskew) avant OCR
     ocr.js           OCR image (Tesseract.js) + lecture PDF (pdf.js) → texte
     parser.js        Texte du ticket → enseigne, date, lignes, totaux
     classifier.js    Ligne → produit normalisé + COICOP + confiance
@@ -81,8 +88,11 @@ Le **parseur est découplé de la source d'entrée** (`ocr.js` → texte →
   copiés depuis `node_modules` par `scripts/prepare-ocr.mjs` (lancé avant
   `dev`/`build`) et servis depuis `public/tesseract/`. Le modèle français
   `lang/fra.traineddata.gz` est versionné dans le dépôt.
+- **Pré-traitement** (`imagePrep.js`) : avant l'OCR, l'image est corrigée
+  (orientation EXIF, éclairage/ombres via division par le fond, contraste,
+  débruitage, redressement). Désactivable via une case à cocher.
 - **PDF** : `pdf.js` lit d'abord le texte intégré (PDF numérique) ; si la page
-  est scannée, elle est rendue en image puis passée à l'OCR.
+  est scannée, elle est rendue en image, **pré-traitée**, puis passée à l'OCR.
 - Le service worker met ces actifs en cache à la première utilisation
   (`runtimeCaching`), de sorte que l'OCR fonctionne ensuite **hors connexion**.
   Aucune image ni PDF ne quitte l'appareil.

@@ -11,6 +11,8 @@ export default function Importer({ onDraft }) {
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState(null)
   const [error, setError] = useState('')
+  const [enhance, setEnhance] = useState(true)
+  const [preview, setPreview] = useState('')
   const photoRef = useRef(null)
   const pdfRef = useRef(null)
   const txtRef = useRef(null)
@@ -42,10 +44,14 @@ export default function Importer({ onDraft }) {
     e.target.value = ''
     if (!file) return
     setError('')
+    setPreview('')
     setBusy(true)
     setProgress({ label: 'Préparation…', progress: 0 })
     try {
-      const { text: extracted } = await extractText(file, setProgress)
+      const { text: extracted } = await extractText(file, setProgress, {
+        enhance,
+        onPreview: setPreview,
+      })
       const clean = (extracted || '').trim()
       setText(clean)
       if (clean) analyze(clean)
@@ -104,6 +110,11 @@ export default function Importer({ onDraft }) {
       <input ref={pdfRef} type="file" accept="application/pdf,.pdf" onChange={handleScan} style={{ display: 'none' }} />
       <input ref={txtRef} type="file" accept=".txt,.csv,text/plain" onChange={onTxt} style={{ display: 'none' }} />
 
+      <label className="toggle">
+        <input type="checkbox" checked={enhance} onChange={(e) => setEnhance(e.target.checked)} disabled={busy} />
+        <span>✨ Améliorer l'image avant lecture <span className="muted">(contraste, ombres, redressement — recommandé)</span></span>
+      </label>
+
       {busy && (
         <div className="ocr-progress">
           <div className="ocr-label">
@@ -112,6 +123,13 @@ export default function Importer({ onDraft }) {
           <div className="progress">
             <div className="bar" style={{ width: `${pct}%` }} />
           </div>
+        </div>
+      )}
+
+      {preview && (
+        <div className="ocr-preview">
+          <img src={preview} alt="Image optimisée pour l'OCR" />
+          <span className="muted">Image telle que lue par l'OCR</span>
         </div>
       )}
 
