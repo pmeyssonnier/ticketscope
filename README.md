@@ -5,7 +5,7 @@ importez un ticket, l'application **extrait les produits, les normalise, leur
 attribue un code COICOP** avec un taux de confiance, puis produit des
 **tableaux de bord** de dépenses et des **exports Excel / CSV / JSON**.
 
-Cette version **V1** est entièrement **côté client** : tout le traitement se
+Cette version **V2** est entièrement **côté client** : tout le traitement se
 fait dans le navigateur, aucune donnée ne quitte l'appareil, et l'application
 fonctionne **hors connexion** une fois installée.
 
@@ -13,7 +13,7 @@ fonctionne **hors connexion** une fois installée.
 |:---:|:---:|:---:|
 | ![Import](docs/01-import.png) | ![Correction](docs/02-review.png) | ![Tableau de bord](docs/03-dashboard.png) |
 
-## Fonctionnalités (V1)
+## Fonctionnalités (V2)
 
 - 📷 **Import** d'un ticket par **photo** (OCR), **PDF**, fichier `.txt` ou
   copier-coller. L'OCR image (Tesseract.js) et la lecture PDF (pdf.js) tournent
@@ -125,10 +125,13 @@ sont conservés uniquement dans le stockage local du navigateur (`localStorage`)
 
 ## Feuille de route
 
-- **V1 (cette version)** — import **photo (OCR) / PDF / texte**, extraction,
-  classification COICOP, correction, tableaux de bord, exports, PWA hors-ligne.
-- **V2** — apprentissage automatique avancé, comparateur de prix entre
-  enseignes, synchronisation cloud, modèles OCR multilingues.
-- **V3** — scan de codes-barres (EAN), intégration bancaire, listes de courses,
-  alertes prix, suivi nutritionnel et empreinte carbone, *Data Explorer* façon
-  Power BI (tableaux croisés, requêtes en langage naturel).
+- **V1** — import texte, extraction, classification COICOP, correction,
+  tableaux de bord, exports, PWA hors-ligne.
+- **V2 (cette version)** — import **photo (OCR) / PDF**, **pré-traitement
+  d'image** (ombres, contraste, redressement), **capture multi-photo** avec
+  recollage automatique.
+- **V3** — apprentissage automatique avancé, comparateur de prix entre
+  enseignes, synchronisation cloud, modèles OCR multilingues, scan de
+  codes-barres (EAN), intégration bancaire, listes de courses, alertes prix,
+  suivi nutritionnel et empreinte carbone, *Data Explorer* façon Power BI
+  (tableaux croisés, requêtes en langage naturel).

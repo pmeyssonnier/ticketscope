@@ -55,7 +55,7 @@ export default function App() {
           <p className="sub">Analyse de tickets · normalisation · COICOP</p>
         </div>
         <div className="spacer" />
-        <span className="tag">v1 · hors-ligne</span>
+        <span className="tag">v2 · hors-ligne</span>
       </header>
 
       <main>
