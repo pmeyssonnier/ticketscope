@@ -1,0 +1,23 @@
+# Configuration Netlify pour TicketScope BE (PWA Vite).
+# Déploiement : app.netlify.com → "Add new site" → "Import an existing project"
+# → connectez ce dépôt GitHub → branche claude/new-session-os5jdk.
+# Netlify lit ce fichier automatiquement (aucun réglage manuel à saisir).
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Sert index.html pour toute route inconnue (bon comportement PWA / SPA).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Le service worker ne doit jamais être mis en cache par le CDN.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
