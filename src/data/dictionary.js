@@ -59,7 +59,7 @@ export const PRODUCT_DICTIONARY = [
   { id: 'gusto-dubaich', normalized: 'Pâte de chocolat de Dubaï', brand: 'Gusto', coicop: '01.1.8', category: 'Confiserie', keywords: ['gusto dubaich', 'dubaich'] },
   { id: 'nocciolat', normalized: 'Pâte à tartiner chocolat bio', coicop: '01.1.8', category: 'Confiserie', keywords: ['nocciolat'] },
   { id: 'crunchy-choco', normalized: 'Crunchy Choco', coicop: '01.1.8', category: 'Petit-déjeuner', keywords: ['crunchy choco', 'crunchy'] },
-  { id: 'biscuits-sables', normalized: 'Biscuits sablés au beurre', coicop: '01.1.8', category: 'Biscuits', keywords: ['biscuits sables', 'sables beurre', 'sable beurre'] },
+  { id: 'biscuits-sables', normalized: 'Biscuits sablés au beurre', coicop: '01.1.8', category: 'Biscuits', keywords: ['biscuits sable', 'sable beu', 'sables beurre', 'sable beurre'] },
   { id: 'eclair', normalized: 'Éclair au chocolat', coicop: '01.1.8', category: 'Pâtisserie', keywords: ['eclair'] },
 
   // --- Boissons sans alcool (02.1.2) ---

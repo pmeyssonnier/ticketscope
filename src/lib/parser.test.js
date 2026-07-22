@@ -74,6 +74,7 @@ describe('classifyItems', () => {
       { raw: '400GR TOM.CERISES', coicop: '01.1.7' },
       { raw: '3OO0ML DID SAUC HAM', coicop: '01.1.9' },
       { raw: 'AMERICIAN MARTINO', coicop: '01.1.2' },
+      { raw: 'BISCUITS SABLE BEU', coicop: '01.1.8' },
     ]
     const out = classifyItems(
       raws.map((r) => ({ raw: r.raw, quantity: 1, unitPrice: 1, gross: 1, discount: 0, net: 1 })),
