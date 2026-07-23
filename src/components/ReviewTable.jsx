@@ -79,8 +79,8 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
   }
 
   const totals = useMemo(() => {
-    const gross = +items.reduce((a, b) => a + (b.gross || 0), 0).toFixed(2)
-    const discount = +items.reduce((a, b) => a + (b.discount || 0), 0).toFixed(2)
+    const gross = +items.reduce((a, b) => a + (Number(b.gross) || 0), 0).toFixed(2)
+    const discount = +items.reduce((a, b) => a + (Number(b.discount) || 0), 0).toFixed(2)
     const net = +(gross + discount + (draft.globalDiscountTotal || 0)).toFixed(2)
     return { gross, discount, net }
   }, [items, draft.globalDiscountTotal])
@@ -92,13 +92,24 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
   const visibleItems = onlyReview ? items.filter((it) => it.needsReview) : items
 
   function save() {
+    // Les champs numériques sont saisis via des <input> et peuvent être des
+    // chaînes ; on les normalise en nombres avant persistance (dashboard,
+    // exports et comparaison font de l'arithmétique dessus).
+    const cleanItems = items.map((it) => ({
+      ...it,
+      quantity: Number(it.quantity) || 0,
+      unitPrice: Number(it.unitPrice) || 0,
+      gross: Number(it.gross) || 0,
+      discount: Number(it.discount) || 0,
+      net: Number(it.net) || 0,
+    }))
     const ticket = {
       id: draft.id,
       createdAt: draft.createdAt,
       engine: draft.engine,
       store: store.trim() || 'Magasin inconnu',
       date,
-      items,
+      items: cleanItems,
       globalDiscountTotal: draft.globalDiscountTotal,
       subtotalDeclared: draft.subtotalDeclared,
       totalDeclared: draft.totalDeclared,
