@@ -1,7 +1,97 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { formatEUR, formatDate, normalizeStr } from '../lib/format.js'
 import { exportCSV, exportJSON, exportXLSX } from '../lib/exporters.js'
+import { loadLearned, exportLearnedData, mergeLearned, clearLearned } from '../lib/storage.js'
 import { ConfidenceBadge, Empty } from './ui.jsx'
+
+// Sauvegarde / transfert du dictionnaire appris (corrections locales).
+function LearnedManager() {
+  const [count, setCount] = useState(0)
+  const [status, setStatus] = useState('')
+  const fileRef = useRef(null)
+
+  useEffect(() => {
+    setCount(loadLearned().length)
+  }, [])
+
+  function doExport() {
+    const data = exportLearnedData()
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'ticketscope-dictionnaire.json'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
+  function onImport(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(String(reader.result || ''))
+        const r = mergeLearned(data)
+        if (r.invalid) {
+          setStatus('❌ Fichier non reconnu (ce n’est pas un export de dictionnaire TicketScope).')
+          return
+        }
+        setCount(loadLearned().length)
+        setStatus(
+          `✓ Import terminé : ${r.added} ajout(s), ${r.updated} mise(s) à jour` +
+            (r.skipped ? `, ${r.skipped} ignorée(s)` : '') +
+            '. Effet sur les prochains tickets analysés.',
+        )
+      } catch {
+        setStatus('❌ Fichier illisible (JSON invalide).')
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  function doClear() {
+    if (!confirm('Vider votre dictionnaire appris (vos corrections locales) ?')) return
+    clearLearned()
+    setCount(0)
+    setStatus('Dictionnaire appris vidé.')
+  }
+
+  return (
+    <div className="card">
+      <h2>Dictionnaire appris (local)</h2>
+      <p className="hint">
+        Vos corrections sont mémorisées sur cet appareil — {count} entrée
+        {count > 1 ? 's' : ''}. Exportez-les pour les sauvegarder ou les
+        transférer vers un autre appareil, puis « Importer » là-bas.
+      </p>
+      <div className="btn-row">
+        <button className="btn" onClick={doExport} disabled={!count}>
+          ⬇️ Exporter (.json)
+        </button>
+        <button className="btn" onClick={() => fileRef.current?.click()}>
+          ⬆️ Importer (.json)
+        </button>
+        {count > 0 && (
+          <button className="btn danger" onClick={doClear}>
+            Vider
+          </button>
+        )}
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/json,.json"
+        onChange={onImport}
+        style={{ display: 'none' }}
+      />
+      {status && <p className="inline-note">{status}</p>}
+    </div>
+  )
+}
 
 export default function History({ tickets, onDelete }) {
   const [query, setQuery] = useState('')
@@ -24,11 +114,14 @@ export default function History({ tickets, onDelete }) {
 
   if (!tickets.length) {
     return (
-      <div className="card">
-        <Empty icon="🗂️" title="Aucun ticket enregistré">
-          Vos tickets analysés apparaîtront ici, avec la recherche et les exports
-          Excel / CSV / JSON.
-        </Empty>
+      <div>
+        <div className="card">
+          <Empty icon="🗂️" title="Aucun ticket enregistré">
+            Vos tickets analysés apparaîtront ici, avec la recherche et les exports
+            Excel / CSV / JSON.
+          </Empty>
+        </div>
+        <LearnedManager />
       </div>
     )
   }
@@ -146,6 +239,8 @@ export default function History({ tickets, onDelete }) {
           )
         })}
       </div>
+
+      <LearnedManager />
     </div>
   )
 }
