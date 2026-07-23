@@ -25,6 +25,9 @@ export default function App() {
   const [view, setView] = useState('import')
   const [ai, setAi] = useState(() => loadAiSettings())
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // Vue de retour après enregistrement/annulation d'une correction :
+  // tableau de bord après un import, historique après l'édition d'un ticket.
+  const [draftReturn, setDraftReturn] = useState('dashboard')
 
   useEffect(() => {
     setTickets(loadTickets())
@@ -35,7 +38,15 @@ export default function App() {
   }
 
   function handleDraft(d) {
+    setDraftReturn('dashboard')
     setDraft(d)
+    setView('review')
+  }
+
+  // Rouvre un ticket enregistré dans l'écran de correction (édition).
+  function handleEdit(ticket) {
+    setDraftReturn('history')
+    setDraft({ ...ticket, items: (ticket.items || []).map((it) => ({ ...it })) })
     setView('review')
   }
 
@@ -44,7 +55,7 @@ export default function App() {
     saveTicket(ticket)
     setTickets(loadTickets())
     setDraft(null)
-    setView('dashboard')
+    setView(draftReturn)
   }
 
   function handleDelete(id) {
@@ -81,7 +92,7 @@ export default function App() {
             onSave={handleSave}
             onCancel={() => {
               setDraft(null)
-              setView('import')
+              setView(draftReturn)
             }}
           />
         ) : view === 'import' ? (
@@ -89,7 +100,7 @@ export default function App() {
         ) : view === 'dashboard' ? (
           <Dashboard tickets={tickets} />
         ) : (
-          <History tickets={tickets} onDelete={handleDelete} />
+          <History tickets={tickets} onDelete={handleDelete} onEdit={handleEdit} />
         )}
       </main>
 

@@ -95,7 +95,7 @@ function LearnedManager() {
   )
 }
 
-export default function History({ tickets, onDelete }) {
+export default function History({ tickets, onDelete, onEdit }) {
   const [query, setQuery] = useState('')
   const [openId, setOpenId] = useState(null)
   const [selected, setSelected] = useState([]) // ids cochés pour comparaison (max 2)
@@ -232,6 +232,14 @@ export default function History({ tickets, onDelete }) {
                   </div>
                 </div>
                 <div className="lr-amount">{formatEUR(net)}</div>
+                <button
+                  className="btn"
+                  style={{ padding: '4px 10px' }}
+                  onClick={() => onEdit(t)}
+                  title="Éditer ce ticket"
+                >
+                  ✏️
+                </button>
                 <button
                   className="btn danger"
                   style={{ padding: '4px 10px' }}
