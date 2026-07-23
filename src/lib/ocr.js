@@ -18,14 +18,18 @@ let _workerPromise = null
 async function getWorker(onLog) {
   if (!_workerPromise) {
     _workerPromise = (async () => {
-      const { createWorker, OEM } = await import('tesseract.js')
-      return createWorker('fra', OEM.LSTM_ONLY, {
+      const { createWorker, OEM, PSM } = await import('tesseract.js')
+      const worker = await createWorker('fra', OEM.LSTM_ONLY, {
         workerPath: `${OCR_BASE}/worker.min.js`,
         corePath: `${OCR_BASE}/`,
         langPath: `${OCR_BASE}/lang`,
         workerBlobURL: true,
         logger: onLog,
       })
+      // Ticket = un bloc de texte unique. Le mode « bloc » évite que la
+      // segmentation automatique découpe en colonnes et saute des lignes.
+      await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK })
+      return worker
     })().catch((e) => {
       _workerPromise = null
       throw e

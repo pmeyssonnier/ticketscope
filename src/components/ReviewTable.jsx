@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { COICOP_LABELS, coicopLabel } from '../data/coicop.js'
-import { formatEUR, titleFromRaw } from '../lib/format.js'
+import { formatEUR, titleFromRaw, uid } from '../lib/format.js'
 import { suggestClassification } from '../lib/suggest.js'
 import { ConfidenceBadge } from './ui.jsx'
 
@@ -52,6 +52,31 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
     setItems((prev) => prev.filter((it) => it.id !== id))
   }
 
+  // Ajout manuel d'une ligne (utile quand l'OCR a sauté un produit).
+  function addItem() {
+    setItems((prev) => [
+      ...prev,
+      {
+        id: uid('it'),
+        raw: '',
+        manual: true,
+        normalized: '',
+        quantity: 1,
+        unitPrice: 0,
+        gross: 0,
+        discount: 0,
+        net: 0,
+        coicop: null,
+        coicopLabel: 'Non classé',
+        category: '',
+        confidence: 0.25,
+        source: 'manuel',
+        needsReview: true,
+      },
+    ])
+    setOnlyReview(false) // s'assurer que la nouvelle ligne est visible
+  }
+
   const totals = useMemo(() => {
     const gross = +items.reduce((a, b) => a + (b.gross || 0), 0).toFixed(2)
     const discount = +items.reduce((a, b) => a + (b.discount || 0), 0).toFixed(2)
@@ -78,7 +103,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
       totalNet: totals.net,
     }
     const corrections = items
-      .filter((it) => it.corrected && it.coicop)
+      .filter((it) => it.corrected && it.coicop && !it.manual && it.raw)
       .map((it) => ({
         raw: it.raw,
         correction: {
@@ -173,7 +198,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
                     placeholder="Produit…"
                     onChange={(e) => correctClassification(it.id, { normalized: e.target.value })}
                   />
-                  <div className="raw">brut : {it.raw}</div>
+                  <div className="raw">{it.manual ? '➕ ligne ajoutée' : `brut : ${it.raw}`}</div>
                   {!it.coicop &&
                     (() => {
                       const s = suggestClassification(it.normalized || it.raw)
@@ -251,6 +276,17 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="btn-row" style={{ marginTop: 10 }}>
+        <button className="btn" onClick={addItem}>
+          ➕ Ajouter une ligne
+        </button>
+        {declared != null && !reconciled && (
+          <span className="muted" style={{ alignSelf: 'center' }}>
+            Écart de {formatEUR(diff)} — l'OCR a peut-être sauté un produit ?
+          </span>
+        )}
       </div>
 
       {onlyReview && (
