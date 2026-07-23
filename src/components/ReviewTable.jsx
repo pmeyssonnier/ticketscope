@@ -154,7 +154,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
                   />
                   <div className="raw">brut : {it.raw}</div>
                 </td>
-                <td className="num" style={{ width: 60 }}>
+                <td className="num" style={{ width: 74 }}>
                   <input
                     type="number"
                     min="0"
@@ -162,7 +162,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
                     onChange={(e) => update(it.id, { quantity: e.target.value })}
                   />
                 </td>
-                <td className="num" style={{ width: 80 }}>
+                <td className="num" style={{ width: 118 }}>
                   <input
                     type="number"
                     step="0.01"
@@ -170,7 +170,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
                     onChange={(e) => update(it.id, { unitPrice: e.target.value })}
                   />
                 </td>
-                <td className="num" style={{ width: 80 }}>
+                <td className="num" style={{ width: 112 }}>
                   <input
                     type="number"
                     step="0.01"
