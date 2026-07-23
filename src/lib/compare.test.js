@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ticketEngine, ticketStats, alignItems, pairStatus } from './compare.js'
+import { ticketEngine, ticketStats, alignItems, pairStatus, diceCoefficient } from './compare.js'
 
 const iaTicket = {
   engine: 'ia',
@@ -62,5 +62,49 @@ describe('alignItems', () => {
     const rows = alignItems(iaTicket, ocrTicket)
     const fraises = rows.find((r) => r.key === 'fraises')
     expect(pairStatus(fraises)).toBe('coicop-diff')
+  })
+})
+
+describe('appariement flou (libellés proches)', () => {
+  it('apparie des noms normalisés différents mais même libellé brut', () => {
+    const a = { items: [{ raw: 'AMERICIAN MARTINO', normalized: 'American Martino', net: 2.69, coicop: '01.1.2', confidence: 0.5, source: 'ia' }] }
+    const b = { items: [{ raw: 'AMERICIAN MARTINO', normalized: 'American Martino (préparation)', net: 2.69, coicop: '01.1.2', confidence: 0.95, source: 'dictionnaire' }] }
+    const rows = alignItems(a, b)
+    expect(rows.length).toBe(1)
+    expect(rows[0].a).toBeTruthy()
+    expect(rows[0].b).toBeTruthy()
+    expect(pairStatus(rows[0])).toBe('same')
+  })
+
+  it('apparie malgré le bruit OCR sur le libellé brut', () => {
+    const a = { items: [{ raw: 'DLL BAMI GORENG', normalized: 'Bami Goreng', net: 4.59, coicop: '01.1.9', confidence: 0.55 }] }
+    const b = { items: [{ raw: 'DLI. RAMI GORENG', normalized: 'Bami Goreng préparé', net: 4.59, coicop: '01.1.9', confidence: 0.7 }] }
+    const rows = alignItems(a, b)
+    expect(rows.length).toBe(1)
+    expect(rows[0].a && rows[0].b).toBeTruthy()
+  })
+
+  it('ne fusionne pas deux produits distincts au même prix', () => {
+    const a = { items: [
+      { raw: 'QUICHE SAUMON BROC', normalized: 'Quiche saumon', net: 8.99, coicop: '01.1.9' },
+      { raw: 'QUICHE OLIVES FETA', normalized: 'Quiche olives', net: 8.99, coicop: '01.1.9' },
+    ] }
+    const b = { items: [
+      { raw: 'QUICHE OLIVES FETA', normalized: 'Quiche olives feta', net: 8.99, coicop: '01.1.9' },
+      { raw: 'QUICHE SAUMON BROC', normalized: 'Quiche saumon brocoli', net: 8.99, coicop: '01.1.9' },
+    ] }
+    const rows = alignItems(a, b)
+    expect(rows.length).toBe(2)
+    // chaque quiche appariée avec son homologue exact
+    for (const r of rows) {
+      expect(r.a && r.b).toBeTruthy()
+      expect(r.a.raw).toBe(r.b.raw)
+    }
+  })
+
+  it('diceCoefficient : 1 si identique, 0 si disjoint', () => {
+    expect(diceCoefficient('abc', 'abc')).toBe(1)
+    expect(diceCoefficient('abcdef', 'xyz')).toBe(0)
+    expect(diceCoefficient('bami goreng', 'rami goreng')).toBeGreaterThan(0.6)
   })
 })

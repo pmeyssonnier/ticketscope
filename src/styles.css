@@ -998,9 +998,19 @@ table.data td .raw {
 }
 .cmp-cell {
   display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cmp-absent {
+  justify-content: center;
+  font-style: italic;
+}
+.cmp-vals {
+  display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  margin-top: 2px;
 }
 .cmp-net {
   font-variant-numeric: tabular-nums;

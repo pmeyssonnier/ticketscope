@@ -3,14 +3,18 @@ import { formatEUR, formatDate } from '../lib/format.js'
 import { ticketStats, engineLabel, alignItems, pairStatus } from '../lib/compare.js'
 import { ConfidenceBadge } from './ui.jsx'
 
-// Une valeur de cellule COICOP + confiance pour un côté (ou « — » si absent).
+// Cellule d'un côté : nom du produit, libellé brut, montant, COICOP, confiance.
 function Side({ it }) {
-  if (!it) return <span className="muted">absent</span>
+  if (!it) return <div className="cmp-cell cmp-absent muted">absent</div>
   return (
     <div className="cmp-cell">
-      <span className="cmp-net">{formatEUR(it.net)}</span>
-      {it.coicop ? <span className="pill coicop">{it.coicop}</span> : <span className="muted">non classé</span>}
-      <ConfidenceBadge value={it.confidence} />
+      <div className="cmp-name">{it.normalized || it.raw || '—'}</div>
+      <div className="raw">brut : {it.raw || '—'}</div>
+      <div className="cmp-vals">
+        <span className="cmp-net">{formatEUR(it.net)}</span>
+        {it.coicop ? <span className="pill coicop">{it.coicop}</span> : <span className="muted">non classé</span>}
+        <ConfidenceBadge value={it.confidence} />
+      </div>
     </div>
   )
 }
@@ -125,7 +129,6 @@ export default function Compare({ a, b, onClose }) {
           <table className="data cmp-lines">
             <thead>
               <tr>
-                <th>Produit</th>
                 <th>{engineLabel(L.engine)}</th>
                 <th>{engineLabel(R.engine)}</th>
                 <th></th>
@@ -136,12 +139,6 @@ export default function Compare({ a, b, onClose }) {
                 const st = pairStatus(p)
                 return (
                   <tr key={`${p.key}-${i}`} className={`cmp-line ${st}`}>
-                    <td>
-                      <div className="cmp-name">{p.label}</div>
-                      <div className="raw">
-                        brut : {(p.a || p.b).raw || '—'}
-                      </div>
-                    </td>
                     <td>
                       <Side it={p.a} />
                     </td>
