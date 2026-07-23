@@ -14,10 +14,15 @@ function scoreEntry(norm, entry) {
   for (const kw of keywords) {
     const k = normalizeStr(kw)
     if (k && norm.includes(k)) {
-      // Plus le fragment reconnu couvre le libellé, plus la confiance est forte.
+      // Une correspondance de dictionnaire est un appariement déterministe,
+      // donc fiable : la confiance est portée avant tout par la SPÉCIFICITÉ du
+      // mot-clé (sa longueur). Un mot-clé de marque de 5–6 caractères suffit à
+      // être sûr, même s'il ne couvre qu'une petite partie d'un libellé long.
+      // Seuls les mots-clés très courts (≈3 car.) restent sous le seuil de
+      // révision (0,75), car ils peuvent correspondre par hasard.
+      const specificity = Math.min(k.length / 8, 1)
       const coverage = k.length / Math.max(norm.length, 1)
-      const specificity = Math.min(k.length / 12, 1) // les fragments longs sont plus sûrs
-      best = Math.max(best, 0.55 + 0.25 * coverage + 0.2 * specificity)
+      best = Math.max(best, 0.6 + 0.38 * specificity + 0.05 * coverage)
     }
   }
   if (best === 0) return 0

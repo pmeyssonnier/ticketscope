@@ -94,4 +94,13 @@ describe('classifyItems', () => {
     const classifiedCount = classified.filter((i) => i.coicop).length
     expect(classifiedCount / classified.length).toBeGreaterThan(0.8)
   })
+
+  it('donne une confiance élevée aux correspondances de dictionnaire (pas de faux « à confirmer »)', () => {
+    // Une correspondance de marque fiable doit dépasser le seuil de révision.
+    const lenor = classified.find((i) => /lenor/i.test(i.raw))
+    expect(lenor.confidence).toBeGreaterThanOrEqual(0.75)
+    expect(lenor.needsReview).toBe(false)
+    // Sur un ticket entièrement reconnu, aucune ligne ne doit être à confirmer.
+    expect(classified.filter((i) => i.needsReview)).toHaveLength(0)
+  })
 })
