@@ -907,3 +907,122 @@ table.data td .raw {
     transform: rotate(360deg);
   }
 }
+
+/* --- Comparaison de tickets --- */
+.pill.engine {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pill.engine.ia {
+  background: #eef2ff;
+  color: #4338ca;
+}
+.pill.engine.local {
+  background: var(--teal-50);
+  color: var(--teal-700);
+}
+
+.cmp-check {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  accent-color: var(--teal-600);
+  cursor: pointer;
+}
+
+.cmp-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: 10px;
+}
+
+.modal-wide {
+  max-width: 860px;
+}
+
+.cmp-stats th[scope='row'] {
+  text-align: left;
+  font-weight: 600;
+  color: var(--slate-700);
+  white-space: nowrap;
+}
+.cmp-stats td {
+  font-variant-numeric: tabular-nums;
+}
+.cmp-diff-row td,
+.cmp-diff-row th {
+  background: var(--amber-50);
+}
+.cmp-delta {
+  color: var(--slate-500);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cmp-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 6px;
+}
+.cmp-tag {
+  font-size: 0.72rem;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.cmp-tag.same {
+  background: #f0fdf4;
+  color: #166534;
+}
+.cmp-tag.only-a {
+  background: #eef2ff;
+  color: #4338ca;
+}
+.cmp-tag.only-b {
+  background: var(--teal-50);
+  color: var(--teal-700);
+}
+
+.cmp-lines td {
+  vertical-align: top;
+}
+.cmp-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.cmp-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cmp-net {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.cmp-status {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--slate-500);
+  white-space: nowrap;
+}
+.cmp-line.only-a {
+  background: #eef2ff66;
+}
+.cmp-line.only-b {
+  background: #f0fdfa66;
+}
+.cmp-line.coicop-diff,
+.cmp-line.net-diff {
+  background: var(--amber-50);
+}
+.cmp-line.coicop-diff .cmp-status,
+.cmp-line.net-diff .cmp-status {
+  color: #b45309;
+}

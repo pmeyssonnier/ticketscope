@@ -177,6 +177,7 @@ function toDraft(parsed) {
   return {
     id: uid('tk'),
     createdAt: new Date().toISOString(),
+    engine: 'ia',
     store: parsed.store || 'Magasin inconnu',
     date: parsed.date || null,
     items,

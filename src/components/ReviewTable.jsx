@@ -95,6 +95,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
     const ticket = {
       id: draft.id,
       createdAt: draft.createdAt,
+      engine: draft.engine,
       store: store.trim() || 'Magasin inconnu',
       date,
       items,

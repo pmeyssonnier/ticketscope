@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { formatEUR, formatDate, normalizeStr } from '../lib/format.js'
 import { exportCSV, exportJSON, exportXLSX } from '../lib/exporters.js'
 import { loadLearned, exportLearnedData, mergeLearned, clearLearned } from '../lib/storage.js'
+import { ticketEngine, engineLabel } from '../lib/compare.js'
+import Compare from './Compare.jsx'
 import { ConfidenceBadge, Empty } from './ui.jsx'
 
 // Sauvegarde / transfert du dictionnaire appris (corrections locales).
@@ -96,6 +98,18 @@ function LearnedManager() {
 export default function History({ tickets, onDelete }) {
   const [query, setQuery] = useState('')
   const [openId, setOpenId] = useState(null)
+  const [selected, setSelected] = useState([]) // ids cochés pour comparaison (max 2)
+  const [comparing, setComparing] = useState(false)
+
+  function toggleSelect(id) {
+    setSelected((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id)
+      if (prev.length >= 2) return [prev[1], id] // garde les 2 plus récents cochés
+      return [...prev, id]
+    })
+  }
+
+  const pair = selected.map((id) => tickets.find((t) => t.id === id)).filter(Boolean)
 
   const filtered = useMemo(() => {
     const q = normalizeStr(query)
@@ -161,6 +175,27 @@ export default function History({ tickets, onDelete }) {
           style={{ marginBottom: 12 }}
         />
 
+        <div className="cmp-bar">
+          <span className="muted">
+            {selected.length === 0
+              ? 'Cochez deux tickets pour les comparer (ex. IA vs OCR).'
+              : `${selected.length}/2 sélectionné${selected.length > 1 ? 's' : ''}`}
+          </span>
+          <div style={{ flex: 1 }} />
+          {selected.length > 0 && (
+            <button className="btn" onClick={() => setSelected([])}>
+              Effacer
+            </button>
+          )}
+          <button
+            className="btn primary"
+            disabled={pair.length !== 2}
+            onClick={() => setComparing(true)}
+          >
+            ⚖️ Comparer
+          </button>
+        </div>
+
         {filtered.length === 0 && (
           <p className="muted">Aucun ticket ne correspond à « {query} ».</p>
         )}
@@ -171,6 +206,14 @@ export default function History({ tickets, onDelete }) {
           return (
             <div key={t.id} style={{ borderBottom: '1px solid var(--slate-100)' }}>
               <div className="list-row">
+                <input
+                  type="checkbox"
+                  className="cmp-check"
+                  checked={selected.includes(t.id)}
+                  onChange={() => toggleSelect(t.id)}
+                  title="Sélectionner pour comparer"
+                  aria-label={`Comparer ${t.store}`}
+                />
                 <button
                   className="btn"
                   style={{ padding: '4px 10px' }}
@@ -180,7 +223,10 @@ export default function History({ tickets, onDelete }) {
                   {open ? '▾' : '▸'}
                 </button>
                 <div className="lr-main">
-                  <div className="lr-title">{t.store}</div>
+                  <div className="lr-title">
+                    {t.store}{' '}
+                    <span className={`pill engine ${ticketEngine(t)}`}>{engineLabel(ticketEngine(t))}</span>
+                  </div>
                   <div className="lr-sub">
                     {formatDate(t.date)} · {(t.items || []).length} article(s)
                   </div>
@@ -241,6 +287,10 @@ export default function History({ tickets, onDelete }) {
       </div>
 
       <LearnedManager />
+
+      {comparing && pair.length === 2 && (
+        <Compare a={pair[0]} b={pair[1]} onClose={() => setComparing(false)} />
+      )}
     </div>
   )
 }

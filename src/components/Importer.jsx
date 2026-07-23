@@ -36,6 +36,7 @@ export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
     onDraft({
       id: uid('tk'),
       createdAt: new Date().toISOString(),
+      engine: 'local',
       rawText: input,
       store: parsed.store,
       date: parsed.date,
