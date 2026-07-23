@@ -2,9 +2,10 @@ import React, { useRef, useState } from 'react'
 import { SAMPLE_TICKET_TEXT } from '../data/sampleTicket.js'
 import { parseTicket } from '../lib/parser.js'
 import { classifyItems } from '../lib/classifier.js'
-import { loadLearned } from '../lib/storage.js'
+import { loadLearned, loadAiSettings, saveAiSettings } from '../lib/storage.js'
 import { uid } from '../lib/format.js'
 import { extractText, extractTextMulti } from '../lib/ocr.js'
+import { readReceiptWithClaude } from '../lib/claudeVision.js'
 
 export default function Importer({ onDraft }) {
   const [text, setText] = useState('')
@@ -14,6 +15,13 @@ export default function Importer({ onDraft }) {
   const [error, setError] = useState('')
   const [enhance, setEnhance] = useState(true)
   const [preview, setPreview] = useState('')
+  const [ai, setAi] = useState(() => loadAiSettings())
+
+  const isClaude = ai.engine === 'claude'
+
+  function updateAi(patch) {
+    setAi(saveAiSettings(patch))
+  }
   const cameraRef = useRef(null)
   const galleryRef = useRef(null)
   const pdfRef = useRef(null)
@@ -63,14 +71,42 @@ export default function Importer({ onDraft }) {
     })
   }
 
+  async function readWithClaude(files) {
+    if (!ai.apiKey.trim()) {
+      setError('Renseignez votre clé API Anthropic pour utiliser le mode IA (voir le champ ci-dessous).')
+      return
+    }
+    setError('')
+    setPreview('')
+    setBusy(true)
+    setProgress({ label: 'Préparation…', progress: 0.1 })
+    try {
+      const draft = await readReceiptWithClaude(files, {
+        apiKey: ai.apiKey.trim(),
+        model: ai.model,
+        onProgress: setProgress,
+      })
+      clearQueue()
+      if (draft.items.length) onDraft(draft)
+      else setError("Claude n'a trouvé aucun produit sur cette image.")
+    } catch (err) {
+      console.error(err)
+      setError(`Lecture IA échouée : ${err.message}`)
+    } finally {
+      setBusy(false)
+      setProgress(null)
+    }
+  }
+
   async function readQueue() {
     if (!queue.length) return
+    const files = queue.map((p) => p.file)
+    if (isClaude) return readWithClaude(files)
     setError('')
     setPreview('')
     setBusy(true)
     setProgress({ label: 'Préparation…', progress: 0 })
     try {
-      const files = queue.map((p) => p.file)
       const { text: extracted } =
         files.length === 1
           ? await extractText(files[0], setProgress, { enhance, onPreview: setPreview })
@@ -93,6 +129,7 @@ export default function Importer({ onDraft }) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
+    if (isClaude) return readWithClaude([file])
     setError('')
     setPreview('')
     setBusy(true)
@@ -136,6 +173,51 @@ export default function Importer({ onDraft }) {
         les produits, les normalise et leur attribue un code COICOP.
       </p>
 
+      <div className="engine-switch">
+        <button
+          type="button"
+          className={`eng ${!isClaude ? 'active' : ''}`}
+          onClick={() => updateAi({ engine: 'local' })}
+          disabled={busy}
+        >
+          ⚡ OCR local <span className="muted">· hors-ligne</span>
+        </button>
+        <button
+          type="button"
+          className={`eng ${isClaude ? 'active' : ''}`}
+          onClick={() => updateAi({ engine: 'claude' })}
+          disabled={busy}
+        >
+          ✨ IA Claude <span className="muted">· précis</span>
+        </button>
+      </div>
+
+      {isClaude && (
+        <div className="ai-panel">
+          <div className="ai-row">
+            <label className="field" style={{ margin: 0 }}>Modèle</label>
+            <select value={ai.model} onChange={(e) => updateAi({ model: e.target.value })} disabled={busy} style={{ maxWidth: 260 }}>
+              <option value="claude-haiku-4-5">Haiku 4.5 — rapide / économique</option>
+              <option value="claude-sonnet-5">Sonnet 5 — plus précis</option>
+            </select>
+          </div>
+          <label className="field" style={{ marginTop: 8 }}>Clé API Anthropic</label>
+          <input
+            type="password"
+            value={ai.apiKey}
+            onChange={(e) => updateAi({ apiKey: e.target.value })}
+            placeholder="sk-ant-…"
+            autoComplete="off"
+            disabled={busy}
+          />
+          <p className="inline-note">
+            🔑 Votre clé reste <b>sur cet appareil</b> (stockage local). Obtenez-en une sur
+            console.anthropic.com. ⚠️ En mode IA, l'image du ticket est <b>envoyée à l'API
+            Anthropic</b> (elle quitte l'appareil) ; l'OCR local reste 100 % hors-ligne.
+          </p>
+        </div>
+      )}
+
       <div className="import-actions">
         <button className="btn primary" onClick={() => cameraRef.current?.click()} disabled={busy}>
           📷 {queue.length ? 'Ajouter une photo' : 'Photographier'}
@@ -156,10 +238,12 @@ export default function Importer({ onDraft }) {
       <input ref={pdfRef} type="file" accept="application/pdf,.pdf" onChange={handlePdf} style={{ display: 'none' }} />
       <input ref={txtRef} type="file" accept=".txt,.csv,text/plain" onChange={onTxt} style={{ display: 'none' }} />
 
-      <label className="toggle">
-        <input type="checkbox" checked={enhance} onChange={(e) => setEnhance(e.target.checked)} disabled={busy} />
-        <span>✨ Améliorer l'image avant lecture <span className="muted">(contraste, ombres, redressement — recommandé)</span></span>
-      </label>
+      {!isClaude && (
+        <label className="toggle">
+          <input type="checkbox" checked={enhance} onChange={(e) => setEnhance(e.target.checked)} disabled={busy} />
+          <span>✨ Améliorer l'image avant lecture <span className="muted">(contraste, ombres, redressement — recommandé)</span></span>
+        </label>
+      )}
 
       {queue.length > 0 && (
         <div className="photo-queue">
@@ -247,12 +331,20 @@ export default function Importer({ onDraft }) {
         )}
       </div>
 
-      <p className="inline-note">
-        🔒 Photos, PDF et OCR sont traités <b>entièrement sur votre appareil</b> —
-        rien n'est envoyé sur Internet. Au tout premier usage, le moteur OCR
-        (~3 Mo) et le modèle français se chargent puis restent disponibles hors
-        connexion.
-      </p>
+      {isClaude ? (
+        <p className="inline-note">
+          ✨ Mode IA : l'image est lue par Claude ({ai.model.includes('haiku') ? 'Haiku' : 'Sonnet'}),
+          qui extrait, normalise et classe les produits en un appel. Nécessite une
+          connexion. Le collage de texte ci-dessus reste analysé localement.
+        </p>
+      ) : (
+        <p className="inline-note">
+          🔒 Photos, PDF et OCR sont traités <b>entièrement sur votre appareil</b> —
+          rien n'est envoyé sur Internet. Au tout premier usage, le moteur OCR
+          (~3 Mo) et le modèle français se chargent puis restent disponibles hors
+          connexion.
+        </p>
+      )}
     </div>
   )
 }

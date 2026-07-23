@@ -1,7 +1,7 @@
 {
   "name": "ticketscope-be",
   "private": true,
-  "version": "2.3.0",
+  "version": "2.4.0",
   "type": "module",
   "description": "TicketScope BE — analyse de tickets de caisse avec normalisation des produits et classification COICOP (PWA React).",
   "scripts": {

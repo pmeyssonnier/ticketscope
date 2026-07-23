@@ -558,6 +558,46 @@ table.data td .raw {
   margin-top: 8px;
 }
 
+/* --- Moteur de lecture (OCR local vs IA Claude) --- */
+.engine-switch {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.engine-switch .eng {
+  flex: 1;
+  border: 1px solid var(--slate-300);
+  background: var(--white);
+  color: var(--slate-700);
+  font-weight: 600;
+  font-size: 0.86rem;
+  padding: 9px 10px;
+  border-radius: 10px;
+  transition: all 0.15s;
+}
+
+.engine-switch .eng.active {
+  border-color: var(--teal-600);
+  background: var(--teal-50);
+  color: var(--teal-700);
+}
+
+.ai-panel {
+  border: 1px solid var(--slate-200);
+  background: var(--slate-50);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.ai-panel .ai-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+}
+
 /* --- Import actions / OCR progress --- */
 .import-actions {
   display: grid;

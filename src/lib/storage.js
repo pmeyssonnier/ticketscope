@@ -5,6 +5,7 @@ import { normalizeStr, uid } from './format.js'
 
 const TICKETS_KEY = 'ticketscope.tickets.v1'
 const LEARNED_KEY = 'ticketscope.learned.v1'
+const AI_KEY = 'ticketscope.ai.v1'
 
 function read(key, fallback) {
   try {
@@ -76,6 +77,20 @@ export function learnFromCorrection(rawLabel, correction) {
 
 export function clearLearned() {
   write(LEARNED_KEY, [])
+}
+
+// --- Réglages IA (moteur de lecture, modèle, clé API — locaux à l'appareil) ---
+const AI_DEFAULTS = { engine: 'local', model: 'claude-haiku-4-5', apiKey: '' }
+
+export function loadAiSettings() {
+  const s = read(AI_KEY, {})
+  return { ...AI_DEFAULTS, ...(s && typeof s === 'object' ? s : {}) }
+}
+
+export function saveAiSettings(patch) {
+  const next = { ...loadAiSettings(), ...patch }
+  write(AI_KEY, next)
+  return next
 }
 
 // --- Export / import de la base apprise (sauvegarde & transfert d'appareil) ---

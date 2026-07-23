@@ -20,6 +20,12 @@ fonctionne **hors connexion** une fois installée.
   **entièrement dans le navigateur** — aucune image n'est envoyée sur Internet.
   Les PDF « numériques » sont lus via leur texte intégré ; les PDF scannés
   passent par l'OCR.
+- ✨ **Mode IA (Claude Vision)** en option : au lieu de l'OCR local, la photo (ou
+  le PDF) est lue par **Claude Haiku ou Sonnet**, qui extrait, normalise et
+  classe les produits (COICOP) en un seul appel — bien plus précis sur les
+  photos difficiles. **Clé API personnelle stockée sur l'appareil** (BYOK) ;
+  aucun backend. En mode IA, l'image est envoyée à l'API Anthropic (l'OCR local
+  reste 100 % hors-ligne et par défaut).
 - 🧵 **Multi-photo pour les longs tickets** : capturez le ticket en plusieurs
   photos (du haut vers le bas, avec un léger recouvrement). Chaque tranche est
   lue par OCR puis **recollée automatiquement** — les lignes communes au
@@ -71,6 +77,7 @@ src/
   lib/
     format.js        Normalisation de texte, parsing des montants, formats € / dates
     imagePrep.js     Pré-traitement image (ombres, contraste, deskew) avant OCR
+    claudeVision.js  Mode IA : lecture du ticket par Claude (vision) -> JSON structuré
     stitch.js        Recollage de plusieurs photos d'un long ticket (dédup recouvrement)
     ocr.js           OCR image (Tesseract.js) + lecture PDF (pdf.js) → texte
     stitch.test.js   Tests unitaires du recollage
