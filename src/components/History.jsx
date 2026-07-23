@@ -95,7 +95,7 @@ function LearnedManager() {
   )
 }
 
-export default function History({ tickets, onDelete, onEdit }) {
+export default function History({ tickets, onDelete, onEdit, onUpdateTicket }) {
   const [query, setQuery] = useState('')
   const [openId, setOpenId] = useState(null)
   const [selected, setSelected] = useState([]) // ids cochés pour comparaison (max 2)
@@ -297,7 +297,12 @@ export default function History({ tickets, onDelete, onEdit }) {
       <LearnedManager />
 
       {comparing && pair.length === 2 && (
-        <Compare a={pair[0]} b={pair[1]} onClose={() => setComparing(false)} />
+        <Compare
+          a={pair[0]}
+          b={pair[1]}
+          onUpdateTicket={onUpdateTicket}
+          onClose={() => setComparing(false)}
+        />
       )}
     </div>
   )

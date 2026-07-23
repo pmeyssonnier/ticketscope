@@ -64,6 +64,12 @@ export default function App() {
     setTickets(loadTickets())
   }
 
+  // Mise à jour d'un ticket existant (ex. corrections depuis la comparaison).
+  function handleUpdateTicket(ticket) {
+    saveTicket(ticket)
+    setTickets(loadTickets())
+  }
+
   const reviewing = view === 'review' && draft
 
   return (
@@ -100,7 +106,7 @@ export default function App() {
         ) : view === 'dashboard' ? (
           <Dashboard tickets={tickets} />
         ) : (
-          <History tickets={tickets} onDelete={handleDelete} onEdit={handleEdit} />
+          <History tickets={tickets} onDelete={handleDelete} onEdit={handleEdit} onUpdateTicket={handleUpdateTicket} />
         )}
       </main>
 

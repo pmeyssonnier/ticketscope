@@ -1016,6 +1016,29 @@ table.data td .raw {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
+
+/* Édition dans la comparaison */
+.cmp-edit input,
+.cmp-edit select {
+  padding: 5px 7px;
+  font-size: 0.82rem;
+}
+.cmp-edit .cmp-num {
+  width: 90px;
+  flex: 0 0 auto;
+}
+.cmp-edit .cmp-vals {
+  align-items: stretch;
+}
+.cmp-copy {
+  display: flex;
+  gap: 4px;
+}
+.cmp-copy .btn {
+  padding: 4px 10px;
+  font-weight: 700;
+  line-height: 1;
+}
 .cmp-status {
   font-size: 0.72rem;
   font-weight: 600;
