@@ -66,6 +66,27 @@ npm test           # tests unitaires (parseur + classification)
 Pour l'essayer immédiatement : ouvrez l'application, cliquez sur
 **« Charger un ticket d'exemple »**, puis **« Analyser le ticket »**.
 
+## Déploiement (Vercel)
+
+Le dépôt est prêt pour **Vercel** (config dans `vercel.json`) — aucun réglage
+manuel à saisir. Pour héberger TicketScope à côté de vos autres projets :
+
+1. Sur [vercel.com](https://vercel.com) → **Add New… → Project**.
+2. **Import Git Repository** → choisissez ce dépôt GitHub.
+3. Vercel détecte le framework **Vite** et lit `vercel.json` automatiquement :
+   - *Build Command* : `npm run build` (copie les fichiers OCR puis build Vite) ;
+   - *Output Directory* : `dist` ;
+   - réécriture SPA (`/* → /index.html`) et cache correct du *service worker*.
+4. **Branche de production** : sélectionnez `main` (Settings → Git → Production
+   Branch) — c'est celle qui reçoit les mises à jour.
+5. **Deploy**. Les déploiements suivants sont automatiques à chaque push sur `main`.
+
+> Le mode ✨ IA (Claude Vision) est **BYOK** : la clé API reste sur l'appareil de
+> l'utilisateur (aucune variable d'environnement à configurer sur Vercel).
+
+Le fichier `netlify.toml` est conservé pour référence (déploiement Netlify
+équivalent) ; il n'a aucun effet sur Vercel.
+
 ## Architecture
 
 ```

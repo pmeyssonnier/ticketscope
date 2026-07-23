@@ -4,6 +4,9 @@
   "version": "2.4.0",
   "type": "module",
   "description": "TicketScope BE — analyse de tickets de caisse avec normalisation des produits et classification COICOP (PWA React).",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "prepare-ocr": "node scripts/prepare-ocr.mjs",
     "dev": "npm run prepare-ocr && vite",
