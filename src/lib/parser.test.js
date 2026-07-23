@@ -37,6 +37,24 @@ describe('parseTicket (ticket de référence)', () => {
     expect(t.computedTotal).toBeCloseTo(269.67, 1)
   })
 
+  it('ignore les lignes parasites (Tel, TOTA(A)L, POI, paiement)', () => {
+    const t2 = parseTicket(
+      [
+        'Proxy Verhaeren',
+        'Tel : 02/241.17.97',
+        'Calgon Tabs 11,72',
+        'Fraise 5,49',
+        'TOTA(A)L 17,21',
+        'BANCONTACT 17,21',
+        'POI: 01851465',
+      ].join('\n'),
+    )
+    // Aucune ligne parasite ne doit devenir un produit.
+    expect(t2.items.every((i) => !/tel|tota|poi|bancontact/i.test(i.raw))).toBe(true)
+    expect(t2.items).toHaveLength(2) // Calgon + Fraise
+    expect(t2.totalDeclared).toBeCloseTo(17.21) // « TOTA(A)L » reconnu comme total
+  })
+
   it('détecte le sous-total récapitulatif', () => {
     expect(t.subtotalDeclared).toBeCloseTo(320.87)
   })

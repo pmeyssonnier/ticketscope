@@ -27,6 +27,18 @@ function matchesAny(norm, keywords) {
   return keywords.some((k) => norm.includes(normalizeStr(k)))
 }
 
+// Comparaison par mot entier (évite les faux positifs de sous-chaîne : « tel »
+// ne doit pas matcher « pastel »). Les mots-clés composés sont cherchés tels quels.
+function matchesWord(norm, keywords) {
+  const tokens = norm.split(' ')
+  return keywords.some((k) => {
+    const kk = normalizeStr(k)
+    if (!kk) return false
+    if (kk.includes(' ')) return norm.includes(kk)
+    return tokens.some((t) => t === kk)
+  })
+}
+
 function detectDate(text) {
   // dd/mm/yyyy ou dd-mm-yyyy ou dd.mm.yyyy (format belge)
   let m = text.match(/(\b\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})\b/)
@@ -82,10 +94,14 @@ export function parseTicket(text) {
     const norm = normalizeStr(parsed.label)
     if (!norm) continue
 
-    const isTotal = matchesAny(norm, LINE_KEYWORDS.total) || /^total\b/.test(norm)
+    // « total », « totaal » (NL) et déformations OCR type « TOTA(A)L » -> « tota a l ».
+    const isTotal =
+      matchesAny(norm, LINE_KEYWORDS.total) || /^tot(a|aa|al)/.test(norm)
     const isSubtotal = matchesAny(norm, LINE_KEYWORDS.subtotal)
     const isDiscount =
       parsed.amount < 0 || matchesAny(norm, LINE_KEYWORDS.discount)
+    // Lignes d'en-tête / paiement (téléphone, TVA, moyen de paiement…).
+    const isNoise = matchesWord(norm, LINE_KEYWORDS.noise)
 
     if (isSubtotal) {
       subtotalDeclared = Math.abs(parsed.amount)
@@ -102,6 +118,8 @@ export function parseTicket(text) {
       if (isDiscount) discountDeclared = -Math.abs(parsed.amount)
       continue
     }
+    // Ligne non-produit (numéro de téléphone, TVA, paiement…) : on l'ignore.
+    if (isNoise) continue
     if (isDiscount) {
       const disc = -Math.abs(parsed.amount)
       const last = items[items.length - 1]

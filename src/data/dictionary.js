@@ -86,4 +86,9 @@ export const LINE_KEYWORDS = {
   discount: ['reduction', 'remise', 'ristourne', 'avantage fidelite', 'coupon', 'cashback', 'bon de reduction'],
   total: ['total paye', 'total a payer', 'total du', 'net a payer', 'montant du'],
   subtotal: ['total avant', 'sous-total', 'sous total'],
+  // Lignes d'en-tête / pied / paiement à ne pas confondre avec des produits
+  // (le numéro de téléphone, la TVA, un moyen de paiement… portent des chiffres
+  // qui ressemblent à des prix). Comparaison par mot entier (voir parser).
+  noise: ['tel', 'tva', 'btw', 'poi', 'iban', 'siret', 'rcs', 'caissier', 'caisse',
+    'bancontact', 'maestro', 'payconiq', 'especes', 'visa', 'mastercard'],
 }
