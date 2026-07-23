@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { COICOP_LABELS, coicopLabel } from '../data/coicop.js'
 import { formatEUR, titleFromRaw, uid } from '../lib/format.js'
 import { suggestClassification } from '../lib/suggest.js'
+import { unitPriceFor } from '../lib/units.js'
 import { ConfidenceBadge } from './ui.jsx'
 
 const COICOP_OPTIONS = Object.keys(COICOP_LABELS)
@@ -182,6 +183,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
               <th className="num">P.U.</th>
               <th className="num">Remise</th>
               <th className="num">Net</th>
+              <th>Format · €/u</th>
               <th>COICOP</th>
               <th>Catégorie</th>
               <th>Confiance</th>
@@ -239,6 +241,22 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
                   />
                 </td>
                 <td className="num" style={{ whiteSpace: 'nowrap' }}>{formatEUR(it.net)}</td>
+                <td style={{ width: 116 }}>
+                  <input
+                    type="text"
+                    value={it.format || ''}
+                    placeholder="ex. 750 g"
+                    onChange={(e) => update(it.id, { format: e.target.value })}
+                  />
+                  {(() => {
+                    const up = unitPriceFor(it)
+                    return up ? (
+                      <div className="unit-price">
+                        {formatEUR(up.value)} {up.label}
+                      </div>
+                    ) : null
+                  })()}
+                </td>
                 <td style={{ width: 110 }}>
                   <select
                     value={it.coicop || ''}

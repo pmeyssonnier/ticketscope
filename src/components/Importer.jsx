@@ -2,12 +2,13 @@ import React, { useRef, useState } from 'react'
 import { SAMPLE_TICKET_TEXT } from '../data/sampleTicket.js'
 import { parseTicket } from '../lib/parser.js'
 import { classifyItems } from '../lib/classifier.js'
-import { loadLearned, loadAiSettings, saveAiSettings } from '../lib/storage.js'
+import { loadLearned } from '../lib/storage.js'
 import { uid } from '../lib/format.js'
 import { extractText, extractTextMulti } from '../lib/ocr.js'
 import { readReceiptWithClaude } from '../lib/claudeVision.js'
+import { parseFormat } from '../lib/units.js'
 
-export default function Importer({ onDraft }) {
+export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
   const [text, setText] = useState('')
   const [queue, setQueue] = useState([]) // [{ id, url, file }]
   const [busy, setBusy] = useState(false)
@@ -15,13 +16,8 @@ export default function Importer({ onDraft }) {
   const [error, setError] = useState('')
   const [enhance, setEnhance] = useState(true)
   const [preview, setPreview] = useState('')
-  const [ai, setAi] = useState(() => loadAiSettings())
 
   const isClaude = ai.engine === 'claude'
-
-  function updateAi(patch) {
-    setAi(saveAiSettings(patch))
-  }
   const cameraRef = useRef(null)
   const galleryRef = useRef(null)
   const pdfRef = useRef(null)
@@ -35,6 +31,7 @@ export default function Importer({ onDraft }) {
     const items = classifyItems(parsed.items, learned).map((it) => ({
       ...it,
       id: uid('it'),
+      format: parseFormat(it.raw)?.text || '',
     }))
     onDraft({
       id: uid('tk'),
@@ -193,28 +190,14 @@ export default function Importer({ onDraft }) {
       </div>
 
       {isClaude && (
-        <div className="ai-panel">
-          <div className="ai-row">
-            <label className="field" style={{ margin: 0 }}>Modèle</label>
-            <select value={ai.model} onChange={(e) => updateAi({ model: e.target.value })} disabled={busy} style={{ maxWidth: 260 }}>
-              <option value="claude-haiku-4-5">Haiku 4.5 — rapide / économique</option>
-              <option value="claude-sonnet-5">Sonnet 5 — plus précis</option>
-            </select>
-          </div>
-          <label className="field" style={{ marginTop: 8 }}>Clé API Anthropic</label>
-          <input
-            type="password"
-            value={ai.apiKey}
-            onChange={(e) => updateAi({ apiKey: e.target.value })}
-            placeholder="sk-ant-…"
-            autoComplete="off"
-            disabled={busy}
-          />
-          <p className="inline-note">
-            🔑 Votre clé reste <b>sur cet appareil</b> (stockage local). Obtenez-en une sur
-            console.anthropic.com. ⚠️ En mode IA, l'image du ticket est <b>envoyée à l'API
-            Anthropic</b> (elle quitte l'appareil) ; l'OCR local reste 100 % hors-ligne.
-          </p>
+        <div className="ai-panel ai-row">
+          <span className="muted">
+            Modèle : <b>{ai.model.includes('haiku') ? 'Haiku 4.5' : 'Sonnet 5'}</b>
+            {ai.apiKey.trim() ? '' : ' · clé API manquante'}
+          </span>
+          <button type="button" className="btn" style={{ padding: '5px 12px' }} onClick={onOpenSettings} disabled={busy}>
+            ⚙ Réglages
+          </button>
         </div>
       )}
 

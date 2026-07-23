@@ -3,11 +3,14 @@ import Importer from './components/Importer.jsx'
 import ReviewTable from './components/ReviewTable.jsx'
 import Dashboard from './components/Dashboard.jsx'
 import History from './components/History.jsx'
+import Settings from './components/Settings.jsx'
 import {
   loadTickets,
   saveTicket,
   deleteTicket,
   learnFromCorrection,
+  loadAiSettings,
+  saveAiSettings,
 } from './lib/storage.js'
 
 const NAV = [
@@ -20,10 +23,16 @@ export default function App() {
   const [tickets, setTickets] = useState([])
   const [draft, setDraft] = useState(null)
   const [view, setView] = useState('import')
+  const [ai, setAi] = useState(() => loadAiSettings())
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   useEffect(() => {
     setTickets(loadTickets())
   }, [])
+
+  function updateAi(patch) {
+    setAi(saveAiSettings(patch))
+  }
 
   function handleDraft(d) {
     setDraft(d)
@@ -55,8 +64,15 @@ export default function App() {
           <p className="sub">Analyse de tickets · normalisation · COICOP</p>
         </div>
         <div className="spacer" />
+        <button className="icon-btn" onClick={() => setSettingsOpen(true)} aria-label="Réglages" title="Réglages">
+          ⚙
+        </button>
         <span className="tag">v2.4</span>
       </header>
+
+      {settingsOpen && (
+        <Settings ai={ai} updateAi={updateAi} onClose={() => setSettingsOpen(false)} />
+      )}
 
       <main>
         {reviewing ? (
@@ -69,7 +85,7 @@ export default function App() {
             }}
           />
         ) : view === 'import' ? (
-          <Importer onDraft={handleDraft} />
+          <Importer onDraft={handleDraft} ai={ai} updateAi={updateAi} onOpenSettings={() => setSettingsOpen(true)} />
         ) : view === 'dashboard' ? (
           <Dashboard tickets={tickets} />
         ) : (

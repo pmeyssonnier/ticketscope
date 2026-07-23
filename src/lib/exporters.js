@@ -3,12 +3,14 @@
 // démarrage de la PWA.
 
 import { monthKey } from './format.js'
+import { unitPriceFor } from './units.js'
 
 // Aplati les tickets en lignes exploitables (1 ligne = 1 produit).
 export function flattenRows(tickets) {
   const rows = []
   for (const t of tickets) {
     for (const it of t.items || []) {
+      const up = unitPriceFor(it)
       rows.push({
         ticket_id: t.id,
         date: t.date || '',
@@ -17,11 +19,14 @@ export function flattenRows(tickets) {
         libelle_brut: it.raw,
         produit: it.normalized || '',
         marque: it.brand || '',
+        format: it.format || '',
         quantite: it.quantity,
         prix_unitaire: it.unitPrice,
         brut: it.gross,
         remise: it.discount,
         net: it.net,
+        prix_unitaire_norm: up ? up.value : '',
+        unite_prix: up ? up.label : '',
         coicop: it.coicop || '',
         coicop_libelle: it.coicopLabel || '',
         categorie: it.category || '',

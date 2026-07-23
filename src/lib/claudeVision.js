@@ -9,6 +9,7 @@
 
 import { COICOP_LABELS, coicopLabel } from '../data/coicop.js'
 import { uid } from './format.js'
+import { parseFormat } from './units.js'
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const COICOP_CODES = Object.keys(COICOP_LABELS)
@@ -56,11 +57,12 @@ const RECEIPT_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['raw', 'product', 'brand', 'quantity', 'unit_price', 'discount', 'net', 'coicop', 'category', 'confidence'],
+        required: ['raw', 'product', 'brand', 'format', 'quantity', 'unit_price', 'discount', 'net', 'coicop', 'category', 'confidence'],
         properties: {
           raw: { type: 'string' },
           product: { type: 'string' },
           brand: { type: 'string' },
+          format: { type: 'string' },
           quantity: { type: 'number' },
           unit_price: { type: 'number' },
           discount: { type: 'number' },
@@ -82,6 +84,7 @@ Consignes :
 - Ignore l'en-tête (enseigne, adresse, TVA, téléphone, n° de ticket, caisse, caissier), les totaux, les remises globales du récapitulatif, les moyens de paiement et les codes (POI...).
 - Regroupe les lignes de produit strictement identiques (même libellé, même prix) en une seule avec "quantity" = nombre d'exemplaires.
 - "raw" = libellé exact imprimé sur le ticket. "product" = nom normalisé lisible en français. "brand" = marque si identifiable, sinon "".
+- "format" = contenance d'UN exemplaire telle qu'imprimée : poids ("750 g", "1 kg"), volume ("880 ml", "1 L", "37,5 cl"), ou nombre ("12 pièces"). Mets "vrac" si vendu au poids, "" si aucune contenance.
 - Rattache une réduction "sur article" au produit concerné : "discount" est négatif, "net" = quantity×unit_price + discount.
 - Attribue le code COICOP le plus adapté depuis CETTE liste (n'invente pas d'autre code ; si vraiment inconnu, mets "") et une "category" courte en français :
 ${list}
@@ -157,6 +160,7 @@ function toDraft(parsed) {
       raw: it.raw || it.product || '',
       normalized: it.product || '',
       brand: it.brand || '',
+      format: (it.format || '').trim() || (parseFormat(it.raw)?.text || ''),
       quantity,
       unitPrice,
       gross,
