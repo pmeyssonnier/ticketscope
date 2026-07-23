@@ -78,7 +78,7 @@ export default function App() {
         <button className="icon-btn" onClick={() => setSettingsOpen(true)} aria-label="Réglages" title="Réglages">
           ⚙
         </button>
-        <span className="tag">v2.4</span>
+        <span className="tag">v2.5</span>
       </header>
 
       {settingsOpen && (
