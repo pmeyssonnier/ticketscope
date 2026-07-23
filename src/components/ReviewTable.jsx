@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { COICOP_LABELS, coicopLabel } from '../data/coicop.js'
 import { formatEUR } from '../lib/format.js'
+import { suggestClassification } from '../lib/suggest.js'
 import { ConfidenceBadge } from './ui.jsx'
 
 const COICOP_OPTIONS = Object.keys(COICOP_LABELS)
@@ -39,6 +40,10 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
         return next
       }),
     )
+  }
+
+  function applySuggestion(id, s) {
+    correctClassification(id, { coicop: s.coicop, category: s.category })
   }
 
   function removeItem(id) {
@@ -89,7 +94,9 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
       <h2>Vérification &amp; correction</h2>
       <p className="hint">
         Corrigez si besoin le produit reconnu, le code COICOP ou les montants.
-        Chaque correction enrichit la base pour les prochains tickets.
+        Pour un produit inconnu, saisissez son nom : une <b>suggestion</b> de
+        catégorie et de COICOP apparaît (à appliquer d'un clic). Chaque correction
+        enrichit la base pour les prochains tickets.
       </p>
 
       <div className="grid cols-3" style={{ marginBottom: 16 }}>
@@ -165,6 +172,20 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
                     onChange={(e) => correctClassification(it.id, { normalized: e.target.value })}
                   />
                   <div className="raw">brut : {it.raw}</div>
+                  {!it.coicop &&
+                    (() => {
+                      const s = suggestClassification(it.normalized || it.raw)
+                      return s ? (
+                        <button
+                          type="button"
+                          className="suggest-chip"
+                          onClick={() => applySuggestion(it.id, s)}
+                          title="Appliquer cette suggestion"
+                        >
+                          💡 {s.coicop} · {s.category} → appliquer
+                        </button>
+                      ) : null
+                    })()}
                 </td>
                 <td className="num" style={{ width: 74 }}>
                   <input
@@ -196,10 +217,10 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
                     value={it.coicop || ''}
                     onChange={(e) => correctClassification(it.id, { coicop: e.target.value || null })}
                   >
-                    <option value="">—</option>
+                    <option value="">— choisir —</option>
                     {COICOP_OPTIONS.map((c) => (
                       <option key={c} value={c}>
-                        {c}
+                        {c} — {COICOP_LABELS[c]}
                       </option>
                     ))}
                   </select>
