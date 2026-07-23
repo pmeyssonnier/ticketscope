@@ -9,6 +9,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
   const [store, setStore] = useState(draft.store || '')
   const [date, setDate] = useState(draft.date || new Date().toISOString().slice(0, 10))
   const [items, setItems] = useState(() => draft.items.map((it) => ({ ...it })))
+  const [onlyReview, setOnlyReview] = useState(false)
 
   function update(id, patch) {
     setItems((prev) =>
@@ -55,6 +56,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
   const diff = declared != null ? +(totals.net - declared).toFixed(2) : null
   const reconciled = diff != null && Math.abs(diff) < 0.02
   const reviewCount = items.filter((it) => it.needsReview).length
+  const visibleItems = onlyReview ? items.filter((it) => it.needsReview) : items
 
   function save() {
     const ticket = {
@@ -101,9 +103,19 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
         </div>
         <div>
           <label className="field">Lignes à vérifier</label>
-          <div style={{ paddingTop: 8, fontWeight: 700, color: reviewCount ? '#b45309' : '#15803d' }}>
-            {reviewCount ? `${reviewCount} à confirmer` : 'Tout est classé ✓'}
-          </div>
+          {reviewCount ? (
+            <button
+              type="button"
+              className={`review-filter ${onlyReview ? 'active' : ''}`}
+              onClick={() => setOnlyReview((v) => !v)}
+              title="N'afficher que les lignes à confirmer"
+            >
+              <span className="dot" /> {reviewCount} à confirmer
+              <span className="rf-action">{onlyReview ? '— tout afficher' : '— filtrer'}</span>
+            </button>
+          ) : (
+            <div style={{ paddingTop: 8, fontWeight: 700, color: '#15803d' }}>Tout est classé ✓</div>
+          )}
         </div>
       </div>
 
@@ -143,7 +155,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
             </tr>
           </thead>
           <tbody>
-            {items.map((it) => (
+            {visibleItems.map((it) => (
               <tr key={it.id} className={it.needsReview ? 'review' : ''}>
                 <td style={{ minWidth: 180 }}>
                   <input
@@ -217,6 +229,27 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
           </tbody>
         </table>
       </div>
+
+      {onlyReview && (
+        <div className="filter-banner">
+          {visibleItems.length > 0 ? (
+            <>
+              🔎 Filtre actif : {visibleItems.length} ligne{visibleItems.length > 1 ? 's' : ''} à
+              confirmer. Attribuez un code COICOP pour valider chacune.
+              <button type="button" className="link-btn" onClick={() => setOnlyReview(false)}>
+                Tout afficher
+              </button>
+            </>
+          ) : (
+            <>
+              ✓ Toutes les lignes sont confirmées.
+              <button type="button" className="link-btn" onClick={() => setOnlyReview(false)}>
+                Revenir à la liste complète
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="btn-row" style={{ marginTop: 16 }}>
         <button className="btn primary" onClick={save} disabled={!items.length}>

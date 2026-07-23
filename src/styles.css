@@ -589,6 +589,69 @@ table.data td .raw {
   transition: width 0.25s ease;
 }
 
+.review-filter {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #fcd34d;
+  background: var(--amber-50);
+  color: #b45309;
+  font-weight: 700;
+  font-size: 0.86rem;
+  padding: 7px 12px;
+  border-radius: 10px;
+  transition: all 0.15s;
+}
+
+.review-filter:hover {
+  border-color: var(--amber-500);
+}
+
+.review-filter.active {
+  background: var(--amber-500);
+  border-color: var(--amber-500);
+  color: #fff;
+}
+
+.review-filter .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--amber-500);
+  flex: none;
+}
+
+.review-filter.active .dot {
+  background: #fff;
+}
+
+.review-filter .rf-action {
+  font-weight: 600;
+  opacity: 0.85;
+  font-size: 0.78rem;
+}
+
+.filter-banner {
+  margin-top: 12px;
+  background: var(--amber-50);
+  border: 1px solid #fde68a;
+  color: #92400e;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.84rem;
+}
+
+.link-btn {
+  border: none;
+  background: none;
+  color: var(--teal-700);
+  font-weight: 700;
+  font-size: 0.84rem;
+  padding: 0 0 0 8px;
+  text-decoration: underline;
+}
+
 .toggle {
   display: flex;
   align-items: flex-start;
