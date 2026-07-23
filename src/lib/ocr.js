@@ -26,9 +26,10 @@ async function getWorker(onLog) {
         workerBlobURL: true,
         logger: onLog,
       })
-      // Ticket = un bloc de texte unique. Le mode « bloc » évite que la
-      // segmentation automatique découpe en colonnes et saute des lignes.
-      await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK })
+      // Ticket = une seule colonne de lignes (libellé à gauche, prix à droite).
+      // PSM SINGLE_COLUMN lit chaque ligne en entier et évite que la
+      // segmentation auto découpe en 2 colonnes (ce qui fait sauter des lignes).
+      await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_COLUMN })
       return worker
     })().catch((e) => {
       _workerPromise = null
