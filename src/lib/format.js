@@ -58,3 +58,16 @@ export function monthKey(iso) {
 export function uid(prefix = 'id') {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`
 }
+
+// Transforme un libellé brut de ticket en nom lisible : retire les tailles /
+// quantités (« 145G », « 26 », « 750ML »…) et met en forme (Majuscule initiale).
+// Sert de point de départ quand on applique une suggestion à un produit inconnu.
+export function titleFromRaw(raw) {
+  return (raw || '')
+    .replace(/\b\d+([.,]\d+)?\s?(g|gr|kg|ml|cl|l|x|pc|pcs)\b/gi, ' ')
+    .replace(/^\s*\d+\s+/, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+    .toLowerCase()
+    .replace(/(^|\s)(\S)/g, (m, sp, ch) => sp + ch.toUpperCase())
+}

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { COICOP_LABELS, coicopLabel } from '../data/coicop.js'
-import { formatEUR } from '../lib/format.js'
+import { formatEUR, titleFromRaw } from '../lib/format.js'
 import { suggestClassification } from '../lib/suggest.js'
 import { ConfidenceBadge } from './ui.jsx'
 
@@ -43,7 +43,9 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
   }
 
   function applySuggestion(id, s) {
-    correctClassification(id, { coicop: s.coicop, category: s.category })
+    const it = items.find((x) => x.id === id)
+    const name = it && it.normalized && it.normalized.trim() ? it.normalized : titleFromRaw(it ? it.raw : '')
+    correctClassification(id, { normalized: name, coicop: s.coicop, category: s.category })
   }
 
   function removeItem(id) {

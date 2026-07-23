@@ -1,8 +1,41 @@
 import { describe, it, expect } from 'vitest'
 import { parseTicket } from './parser.js'
 import { classifyItems } from './classifier.js'
-import { parseAmount, normalizeStr } from './format.js'
+import { parseAmount, normalizeStr, titleFromRaw } from './format.js'
 import { SAMPLE_TICKET_TEXT } from '../data/sampleTicket.js'
+
+const mkItems = (raws) =>
+  raws.map((raw) => ({ raw, quantity: 1, unitPrice: 1, gross: 1, discount: 0, net: 1 }))
+
+describe('classification tolérante aux fautes OCR (fuzzy)', () => {
+  it('reconnaît un libellé à ~1 lettre d’erreur, avec le bon nom et code', () => {
+    const [q, m] = classifyItems(mkItems(['QUICHE OLTVES FETA', 'AMERICIAN MARTING']))
+    expect(q.coicop).toBe('01.1.9')
+    expect(q.normalized).toMatch(/quiche olives/i)
+    expect(q.needsReview).toBe(true) // fuzzy -> confiance sous le seuil
+    expect(m.coicop).toBe('01.1.2')
+    expect(m.normalized).toMatch(/martino/i)
+  })
+
+  it('garde la haute confiance pour un libellé net (pas de fuzzy inutile)', () => {
+    const [q] = classifyItems(mkItems(['QUICHE SAUMON BROC']))
+    expect(q.coicop).toBe('01.1.9')
+    expect(q.needsReview).toBe(false)
+  })
+
+  it('ne fuzzy-matche pas un produit vraiment inconnu', () => {
+    const [u] = classifyItems(mkItems(['ZORGLUB MACHIN TRUC']))
+    expect(u.coicop).toBeNull()
+  })
+})
+
+describe('titleFromRaw', () => {
+  it('nettoie et met en forme un libellé brut', () => {
+    expect(titleFromRaw('145G CHIPS CAMEMB')).toBe('Chips Camemb')
+    expect(titleFromRaw('26 DASH PODS')).toBe('Dash Pods')
+    expect(titleFromRaw('GAUFRE DE LIEGE')).toBe('Gaufre De Liege')
+  })
+})
 
 describe('parseAmount', () => {
   it('parse les formats belges', () => {
