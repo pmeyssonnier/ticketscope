@@ -59,9 +59,17 @@ en option, qui envoie l'image du ticket à l'API Anthropic (voir plus bas).
 - ⬇️ **Exports** Excel (`.xlsx`, feuilles *Lignes* / *Synthèse COICOP* /
   *Tickets*), CSV et JSON, prêts pour Excel ou Power BI.
 - 💾 **Sauvegarde complète** (tickets + dictionnaire appris, jamais la clé API)
-  en un fichier `.json`, à restaurer sur un autre appareil. À l'import, les
-  tickets déjà présents ne sont pas écrasés ; les anciens exports JSON des
-  tickets et l'export du dictionnaire sont acceptés.
+  en un fichier `.json`, à restaurer sur un autre appareil. L'import est **strict
+  et en deux temps** : le fichier est d'abord analysé (aperçu avec les anomalies,
+  rien n'est écrit), puis importé seulement après votre confirmation. Les valeurs
+  impossibles (texte dans un champ numérique, date inexistante, quantité
+  négative…) font **rejeter** le ticket au lieu d'être corrigées en silence ; les
+  tickets déjà présents ne sont jamais écrasés ; les anciens exports JSON des
+  tickets et l'export du dictionnaire sont acceptés. Un **rappel** s'affiche
+  quand aucune sauvegarde n'a été exportée depuis 30 jours (les sauvegardes
+  restent manuelles).
+
+  ![Sauvegarde complète](docs/06-backup.png)
 - 📱 **PWA** installable sur Android, iPhone, Windows, Mac ; fonctionne hors
   ligne (portrait et paysage).
 
@@ -98,7 +106,13 @@ npm run dev        # serveur de développement (http://localhost:5173)
 npm run build      # build de production dans dist/
 npm run preview    # sert le build de production
 npm test           # tests unitaires (Vitest)
+npm run e2e        # tests de bout en bout sur téléphone émulé (Playwright)
 ```
+
+Les tests de bout en bout construisent l'application, la servent avec les en-têtes
+de `vercel.json` et la pilotent dans Chromium (Pixel 7). Premier lancement :
+`npx playwright install chromium` ; `PW_CHROMIUM=/chemin/vers/chrome` permet
+d'utiliser un Chromium déjà installé.
 
 Pour l'essayer immédiatement : ouvrez l'application, cliquez sur
 **« Exemple »**, puis **« Analyser le ticket »**.
@@ -127,8 +141,9 @@ manuel à saisir :
 > Le mode ✨ IA est **BYOK** : la clé API reste sur l'appareil de l'utilisateur
 > (aucune variable d'environnement à configurer sur Vercel).
 
-L'intégration continue (`.github/workflows/ci.yml`) lance les tests et le build
-à chaque push et pull request.
+L'intégration continue (`.github/workflows/ci.yml`) lance, à chaque push et pull
+request, les tests unitaires et le build, ainsi que les tests de bout en bout
+(rapport Playwright conservé en cas d'échec).
 
 ## Architecture
 
@@ -153,12 +168,15 @@ src/
     ticketStore.js   Tickets enregistrés (IndexedDB, repli localStorage, migration)
     secretStore.js   Clé API Anthropic chiffrée (WebCrypto, clé d'appareil non exportable)
     storage.js       Base apprise et réglages (localStorage)
-    backup.js        Sauvegarde / restauration complète
+    backup.js        Sauvegarde / restauration : validation stricte, plan d'import, rappel
+    saveFlow.js      Enregistrement d'un ticket corrigé : ticket d'abord, apprentissage ensuite
     exporters.js     Exports Excel / CSV / JSON
     xlsxWriter.js    Écriture .xlsx maison (sans dépendance de lecture)
     *.test.js        Tests unitaires de chaque module
   components/        Interface React (Import, Correction, Tableau de bord,
                      Historique, Comparaison, Réglages)
+e2e/                 Tests de bout en bout (Playwright, téléphone émulé)
+playwright.config.js Configuration des tests de bout en bout
 scripts/
   prepare-ocr.mjs    Copie le moteur Tesseract (worker + WASM) dans public/tesseract/
 public/tesseract/    Actifs OCR servis localement (aucun CDN) ; lang/ = modèle FR
@@ -205,21 +223,39 @@ modèle (le schéma JSON de la réponse l'énumère).
   mode IA envoie l'image du ticket à l'API Anthropic.
 - **Stockage** : les tickets sont dans **IndexedDB** (migrés automatiquement
   depuis l'ancien `localStorage`, avec repli sur `localStorage` si IndexedDB est
-  indisponible) ; la base apprise et les réglages sont dans `localStorage`.
+  indisponible). La migration est **idempotente** : elle n'écrase jamais un ticket
+  déjà présent et ne ressuscite pas un ticket supprimé, même si l'ancienne clé n'a
+  pas pu être effacée. La base apprise et les réglages sont dans `localStorage`.
 - **Clé API Anthropic** : chiffrée (AES-GCM) avec une **clé d'appareil non
   exportable** (WebCrypto), dans une base IndexedDB à part ; migrée
-  automatiquement depuis l'ancien stockage en clair. Elle n'apparaît jamais dans
-  les sauvegardes. Sans WebCrypto ou IndexedDB, elle reste en clair et les
-  Réglages l'indiquent. Limite : un script malveillant exécuté dans la page
-  pourrait demander le déchiffrement ; la CSP réduit ce risque sans l'éliminer.
+  automatiquement depuis l'ancien stockage en clair — l'ancienne copie n'est
+  supprimée qu'après avoir été chiffrée **et relue**. Elle n'apparaît jamais dans
+  les sauvegardes. **Mode dégradé** (sans WebCrypto ou IndexedDB, ou stockage
+  plein) : la clé n'est **jamais écrite en clair** ; elle reste en mémoire pour la
+  session, les Réglages l'indiquent et il faudra la ressaisir. Limite : un script
+  malveillant exécuté dans la page pourrait demander le déchiffrement ; la CSP
+  réduit ce risque sans l'éliminer.
 - **Exports** : les libellés commençant par `=`, `+`, `-` ou `@` sont neutralisés
   pour éviter l'injection de formule à l'ouverture dans Excel.
 - **Dépendances** : l'export Excel n'utilise plus la librairie `xlsx` (avis de
   sécurité sans correctif sur npm) mais un écrivain `.xlsx` maison
-  (`xlsxWriter.js`, compression `fflate`).
+  (`xlsxWriter.js`, compression `fflate`). Les outils de développement (Vite 7,
+  Vitest 5, plugins PWA et React à jour) sont aussi à jour : `npm audit` ne
+  signale aucune vulnérabilité, y compris pour les dépendances de développement.
+- **Instructions au modèle IA** : l'invariant de total est
+  somme(lignes) + somme(promotions) = total payé ; les remises globales du
+  récapitulatif passent par les promotions au lieu d'être ignorées.
 
 ## Nouveautés récentes
 
+- **2.7.1** — corrections issues de la revue de code : migration des tickets
+  idempotente ; clé API jamais écrite en clair (mode dégradé en mémoire, erreurs
+  signalées, ancienne clé supprimée seulement après confirmation) ; import des
+  sauvegardes strict avec aperçu et confirmation ; consigne de total cohérente avec
+  les promotions ; vrac « au litre » en volume ; ticket enregistré avant
+  l'apprentissage ; rappel de sauvegarde ; tests de bout en bout sur téléphone en
+  CI ; outils de développement à jour (0 vulnérabilité) ; captures d'écran
+  régénérées.
 - **2.7** — sauvegarde / restauration complète ; export Excel sans la dépendance
   `xlsx` vulnérable.
 - **2.6** — Node 24 ; tickets dans IndexedDB ; clé API chiffrée ; codes COICOP
