@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toDraft, safeModel, buildPrompt, DEFAULT_AI_MODEL } from './claudeVision.js'
+import { toDraft, namePromotedItems, safeModel, buildPrompt, DEFAULT_AI_MODEL } from './claudeVision.js'
 import { monthKey } from './format.js'
 import { parseTicket } from './parser.js'
 
@@ -147,5 +147,26 @@ describe('deux confiances : lecture et classement', () => {
     expect(p).toMatch(/item_numbers/)
     expect(p).toMatch(/sous-vêtements.*03\.1\.2/)
     expect(p).toMatch(/jamais d'un autre prix/i)
+  })
+})
+
+describe('type d\'article d\'une promotion de lot', () => {
+  const mk = (raw, price) => ({ raw, normalized: 'Boxer', quantity: 1, unitPrice: price, net: price, coicop: '03.1.2' })
+  const items = [mk('NIWOBIBOUP LIGHT PINK,XL', 7.99), mk('MICUADRO BLUE SKY,XL', 7.99), mk('DAXFORDMC BLUE,XXL', 17.99), mk('DIBISTRIPE BLUE SKY,XL', 7.99), mk('PASHAN BLUE NAVY,XXL', 29.99)]
+  const promo = { label: 'Boxers 3 x 19,99EUR', amount: -3.98, item_numbers: [1, 2, 4] }
+
+  it('« Boxer » reste sur les articles visés, les autres retrouvent leur nom de modèle', () => {
+    const out = namePromotedItems(items, [promo])
+    expect(out.map((i) => i.normalized)).toEqual(['Boxer', 'Boxer', 'Daxfordmc Blue,xxl', 'Boxer', 'Pashan Blue Navy,xxl'])
+  })
+
+  it('rattachement douteux (plus d\'articles visés que le « 3 x ») : rien n\'est modifié', () => {
+    const out = namePromotedItems(items, [{ ...promo, item_numbers: [1, 2, 3, 4, 5] }])
+    expect(out.map((i) => i.normalized)).toEqual(items.map((i) => i.normalized))
+  })
+
+  it('libellé sans « N x » ou sans articles visés : rien n\'est modifié', () => {
+    expect(namePromotedItems(items, [{ label: 'Remise carte', amount: -2, item_numbers: [] }])).toEqual(items)
+    expect(namePromotedItems(items, [{ ...promo, item_numbers: [] }])).toEqual(items)
   })
 })
