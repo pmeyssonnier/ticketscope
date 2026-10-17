@@ -56,6 +56,15 @@ describe('référentiel COICOP 2018 versionné', () => {
     }
   })
 
+  it('39 classes proposées, dont les 11 ajoutées (restaurants, ménage, santé, soins, carburant)', () => {
+    expect(Object.keys(COICOP_LABELS)).toHaveLength(39)
+    for (const code of ['05.2.1', '05.3.2', '05.4.0', '05.5.2', '06.1.1', '06.1.2', '07.2.2', '11.1.1', '11.1.2', '13.1.2', '13.1.3']) {
+      expect(COICOP_LABELS[code], code).toBeTruthy()
+    }
+    expect(coicopLabel('11.1.1')).toBe('Restaurants, cafés et établissements similaires')
+    expect(coicopLabel('13.1.3')).toBe('Salons de coiffure et instituts de soins et de beauté')
+  })
+
   it('titres officiels de référence (extraits du fichier source)', () => {
     expect(coicopInfo('01.1.4').titleEn).toBe('Milk, other dairy products and eggs (ND)')
     expect(coicopInfo('01.2.2').titleEn).toBe('Coffee and coffee substitutes (ND)')

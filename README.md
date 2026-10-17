@@ -38,7 +38,8 @@ en option, qui envoie l'image du ticket à l'API Anthropic (voir plus bas).
   récapitulatif ne sont pas comptées deux fois.
 - 🏷️ **Classification COICOP 2018** avec **taux de confiance** et catégorie fine :
   alimentation et boissons non alcoolisées (01), alcool et tabac (02),
-  **habillement et chaussures (03)** et produits d'entretien (05). Trois niveaux :
+  **habillement et chaussures (03)**, maison et entretien (05), santé courante (06),
+  carburants (07), restauration (11) et soins corporels (13). Trois niveaux :
   **dictionnaire de produits** (et corrections apprises), puis **repli par règles**
   de mots entiers (code pré-rempli mais toujours « à confirmer »), puis « non
   classé ». Les codes viennent d'un référentiel officiel versionné (voir
@@ -270,7 +271,7 @@ janvier 2026), versionnée dans `src/data/` :
 L'empreinte SHA-256 de chaque fichier source est consignée dans les données.
 Règles de conduite :
 
-- **28 classes proposées** dans l'interface et au mode IA (`ACTIVE` dans
+- **39 classes proposées** dans l'interface et au mode IA (`ACTIVE` dans
   `coicop.js`) ; les autres codes officiels restent reconnus (import, export).
 - **Jamais de code inconnu présenté comme officiel** : un code hors référentiel est
   « non classé » en mode IA et signalé à l'import des sauvegardes.
@@ -299,8 +300,12 @@ mesures avec des seuils (« cliquet ») : une régression fait échouer les test
 Mesures actuelles (codes COICOP 2018) : lignes et montants retrouvés à 100 % jusqu'à
 6 % de bruit ; sans bruit, **100 % de couverture** sur les trois tickets et **98 % de
 bons codes** (la seule erreur, « MCCAIN AIRFRY », est un code sûr du dictionnaire à
-valider) ; avec 6 % de bruit, 69 % de bons codes et 93 % des erreurs signalées « à
-confirmer ». Les codes à confiance haute sont justes à 95 %. Le repli par règles a
+valider) ; avec 6 % de bruit, 67 % de bons codes et 96 % des erreurs signalées « à
+confirmer ». Les codes à confiance haute sont justes à 95 %. Les deux tickets
+synthétiques des classes ajoutées (santé, maison, carburant, restauration) sont
+annotés par l'auteur des règles : la mesure y est optimiste. Limite connue : le
+classement local ignore l'enseigne, donc une bière au restaurant reste classée en
+bière (`02.1.3`) et non en restauration (`11.1.1`). Le repli par règles a
 fait passer la couverture du ticket de vêtements de 0 à 100 % et celle du ticket de
 courses de 13 à 100 %. Les codes de référence du ticket d'exemple viennent de
 l'IA et **ne sont pas validés par un humain** (voir `eval/README.md`).
@@ -337,6 +342,14 @@ l'IA et **ne sont pas validés par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.9.9** — **11 classes COICOP de plus** (39 au total) : restaurants et cafés `11.1.1`,
+  cantines `11.1.2`, linge de maison `05.2.1`, petits appareils `05.3.2`, vaisselle et
+  ustensiles `05.4.0`, outillage non motorisé `05.5.2`, médicaments `06.1.1`, produits
+  médicaux `06.1.2`, soins corporels `13.1.2`, coiffure et beauté `13.1.3`, carburants
+  `07.2.2`. Règles de mots entiers tirées du texte officiel de chaque classe (papier
+  toilette et mouchoirs sont en `13.1.2`, pas en produits ménagers). Une correspondance
+  **approximative** du dictionnaire (« homme » ~ « pomme ») cède désormais la place à une
+  règle précise. Deux tickets synthétiques ajoutés à l'évaluation.
 - **2.9.8** — **correspondance COICOP 1999 ↔ 2018** (`src/data/coicop1999.js` et
   `coicopCorrespondence.js`), d'après le tableau officiel de l'ONU (2 octobre 2024,
   empreinte SHA-256 consignée) : titres 1999 et équivalents dans les deux sens. Une classe
