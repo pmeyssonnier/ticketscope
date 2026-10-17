@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseFormat, unitPrice } from './units.js'
+import { parseFormat, unitPrice, unitPriceFor } from './units.js'
 
 describe('parseFormat', () => {
   it('lit le poids et normalise en kg', () => {
@@ -42,5 +42,20 @@ describe('unitPrice', () => {
   })
   it('renvoie null sans format exploitable', () => {
     expect(unitPrice(3.99, 1, 'Ravioli')).toBeNull()
+  })
+})
+
+describe('formats (régressions audit)', () => {
+  it('« max 12 » n\'est pas un pack de 12', () => {
+    expect(parseFormat('PRIX MAX 12')).toBeNull()
+  })
+  it('le texte « ×12 » se reparse (prix unitaire conservé)', () => {
+    expect(parseFormat('×12')?.baseQty).toBe(12)
+    expect(unitPriceFor({ net: 4.8, quantity: 1, format: '×12', raw: '' })?.value).toBe(0.4)
+  })
+  it('multipack 2x33cl = 0,66 L', () => {
+    const f = parseFormat('COLA 2x33cl')
+    expect(f.baseQty).toBe(0.66)
+    expect(parseFormat(f.text)?.baseQty).toBe(0.66)
   })
 })

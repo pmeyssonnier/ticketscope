@@ -80,11 +80,18 @@ export function clearLearned() {
 }
 
 // --- Réglages IA (moteur de lecture, modèle, clé API — locaux à l'appareil) ---
-const AI_DEFAULTS = { engine: 'local', model: 'claude-haiku-4-5', apiKey: '' }
+const AI_DEFAULTS = { engine: 'local', model: 'claude-haiku-5-5', apiKey: '' }
+
+const AI_MODEL_IDS = ['claude-haiku-5-5', 'claude-sonnet-5-5']
 
 export function loadAiSettings() {
   const s = read(AI_KEY, {})
-  return { ...AI_DEFAULTS, ...(s && typeof s === 'object' ? s : {}) }
+  const merged = { ...AI_DEFAULTS, ...(s && typeof s === 'object' ? s : {}) }
+  // Migration : anciens identifiants (claude-haiku-4-5, claude-sonnet-5…) -> modèle courant.
+  if (!AI_MODEL_IDS.includes(merged.model)) {
+    merged.model = /sonnet/.test(String(merged.model)) ? 'claude-sonnet-5-5' : AI_DEFAULTS.model
+  }
+  return merged
 }
 
 export function saveAiSettings(patch) {

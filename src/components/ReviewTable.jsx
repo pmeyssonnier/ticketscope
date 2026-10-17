@@ -9,7 +9,7 @@ const COICOP_OPTIONS = Object.keys(COICOP_LABELS)
 
 export default function ReviewTable({ draft, onSave, onCancel }) {
   const [store, setStore] = useState(draft.store || '')
-  const [date, setDate] = useState(draft.date || new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(draft.date || '')
   const [items, setItems] = useState(() => draft.items.map((it) => ({ ...it })))
   const [onlyReview, setOnlyReview] = useState(false)
 
@@ -92,6 +92,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
   const visibleItems = onlyReview ? items.filter((it) => it.needsReview) : items
 
   function save() {
+    if (!date && !confirm('Aucune date renseignée : le ticket sera classé « Inconnu » dans le tableau de bord. Enregistrer quand même ?')) return
     // Les champs numériques sont saisis via des <input> et peuvent être des
     // chaînes ; on les normalise en nombres avant persistance (dashboard,
     // exports et comparaison font de l'arithmétique dessus).
@@ -108,7 +109,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
       createdAt: draft.createdAt,
       engine: draft.engine,
       store: store.trim() || 'Magasin inconnu',
-      date,
+      date: date || null,
       items: cleanItems,
       globalDiscountTotal: draft.globalDiscountTotal,
       subtotalDeclared: draft.subtotalDeclared,
