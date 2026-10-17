@@ -59,3 +59,11 @@ describe('formats (régressions audit)', () => {
     expect(parseFormat(f.text)?.baseQty).toBe(0.66)
   })
 })
+
+describe('prix unitaire — montants négatifs', () => {
+  it('pas de prix unitaire pour une remise ou un montant nul', () => {
+    expect(unitPriceFor({ net: -3.98, quantity: 1, format: '', raw: 'Boxers 3 x 19,99EUR' })).toBeNull()
+    expect(unitPrice(0, 1, '1 kg')).toBeNull()
+    expect(unitPrice(2.5, 1, '1 kg')).toEqual({ value: 2.5, label: '€/kg' })
+  })
+})

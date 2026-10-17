@@ -63,7 +63,7 @@ export function summarizeByCoicop(tickets) {
   return [...map.values()].sort((a, b) => b.net - a.net)
 }
 
-function download(filename, blob) {
+export function download(filename, blob) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -99,16 +99,8 @@ export function exportCSV(tickets) {
 }
 
 export async function exportXLSX(tickets) {
-  const XLSX = await import('xlsx')
-  const wb = XLSX.utils.book_new()
-
-  const rows = flattenRows(tickets)
-  const wsLignes = XLSX.utils.json_to_sheet(rows)
-  XLSX.utils.book_append_sheet(wb, wsLignes, 'Lignes')
-
-  const synth = summarizeByCoicop(tickets)
-  const wsSynth = XLSX.utils.json_to_sheet(synth)
-  XLSX.utils.book_append_sheet(wb, wsSynth, 'Synthèse COICOP')
+  // Écriture maison (voir xlsxWriter.js) : plus de dépendance `xlsx` (SheetJS).
+  const { buildXlsx, XLSX_MIME } = await import('./xlsxWriter.js')
 
   // Feuille tickets (en-têtes).
   const head = tickets.map((t) => ({
@@ -119,8 +111,11 @@ export async function exportXLSX(tickets) {
     total_net: +(t.items || []).reduce((a, b) => a + (Number(b.net) || 0), 0).toFixed(2),
     total_declare: t.totalDeclared ?? '',
   }))
-  const wsHead = XLSX.utils.json_to_sheet(head)
-  XLSX.utils.book_append_sheet(wb, wsHead, 'Tickets')
 
-  XLSX.writeFile(wb, 'ticketscope-export.xlsx')
+  const bytes = buildXlsx([
+    { name: 'Lignes', rows: flattenRows(tickets) },
+    { name: 'Synthèse COICOP', rows: summarizeByCoicop(tickets) },
+    { name: 'Tickets', rows: head },
+  ])
+  download('ticketscope-export.xlsx', new Blob([bytes], { type: XLSX_MIME }))
 }

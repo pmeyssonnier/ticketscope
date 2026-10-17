@@ -51,6 +51,8 @@ fonctionne **hors connexion** une fois installée.
 - 🗂️ **Historique** avec recherche instantanée (produit, catégorie, COICOP, magasin).
 - ⬇️ **Exports** Excel (`.xlsx`, feuilles *Lignes* / *Synthèse COICOP* /
   *Tickets*), CSV et JSON — prêts pour Excel ou Power BI.
+- 💾 **Sauvegarde complète** (tickets + dictionnaire appris, sans la clé API) en un fichier
+  `.json`, à restaurer sur un autre appareil ; les tickets déjà présents ne sont pas écrasés.
 - 📱 **PWA** installable sur Android, iPhone, Windows, Mac ; fonctionne hors ligne.
 
 ## Démarrage
@@ -104,8 +106,12 @@ src/
     stitch.test.js   Tests unitaires du recollage
     parser.js        Texte du ticket → enseigne, date, lignes, totaux
     classifier.js    Ligne → produit normalisé + COICOP + confiance
-    storage.js       Persistance locale (tickets + base apprise)
+    storage.js       Persistance locale (base apprise, réglages)
+    ticketStore.js   Tickets enregistrés (IndexedDB, repli localStorage)
+    secretStore.js   Clé API Anthropic chiffrée
+    backup.js        Sauvegarde / restauration complète
     exporters.js     Exports Excel / CSV / JSON
+    xlsxWriter.js    Écriture .xlsx maison (remplace SheetJS, sans dépendance de lecture)
     parser.test.js   Tests unitaires
   components/        Interface React (Import, Correction, Tableau de bord, Historique)
 scripts/
