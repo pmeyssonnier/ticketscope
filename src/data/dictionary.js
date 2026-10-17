@@ -62,8 +62,8 @@ export const PRODUCT_DICTIONARY = [
   { id: 'biscuits-sables', normalized: 'Biscuits sablés au beurre', coicop: '01.1.8', category: 'Biscuits', keywords: ['biscuits sable', 'sable beu', 'sables beurre', 'sable beurre'] },
   { id: 'eclair', normalized: 'Éclair au chocolat', coicop: '01.1.8', category: 'Pâtisserie', keywords: ['eclair'] },
 
-  // --- Boissons sans alcool (02.1.2) ---
-  { id: 'ginger-beer', normalized: 'Bunda Ginger Beer', brand: 'Bunda', coicop: '02.1.2', category: 'Boissons sans alcool', keywords: ['ginger beer', 'bunda'] },
+  // --- Boissons rafraîchissantes (01.2.6) ---
+  { id: 'ginger-beer', normalized: 'Bunda Ginger Beer', brand: 'Bunda', coicop: '01.2.6', category: 'Boissons rafraîchissantes', keywords: ['ginger beer', 'bunda'] },
 
   // --- Produits alimentaires divers (01.1.9) ---
   { id: 'chips-camembert', normalized: 'Chips Camembert', coicop: '01.1.9', category: 'Snacks', keywords: ['chips camembert', 'chips'] },

@@ -40,12 +40,9 @@ describe('précision du pipeline local sur le jeu annoté', () => {
     expect(results[0].perTicket['courses-synthetique'].coverage).toBeGreaterThanOrEqual(0.9)
   })
 
-  it('la confiance est calibrée : « haute » est bien plus fiable que « basse »', () => {
-    const c = results[0].calibration
-    expect(c.haute.accuracy).toBeGreaterThanOrEqual(0.9)
-    // depuis le repli par règles, les lignes « basse » sont souvent justes (≈ 92 %
-    // sans bruit) : on exige seulement que « haute » reste la plus fiable
-    expect(c.haute.accuracy).toBeGreaterThan(c.basse.accuracy)
+  it('sans bruit, les codes à confiance haute sont fiables', () => {
+    expect(results[0].calibration.haute.accuracy).toBeGreaterThanOrEqual(0.9)
+    expect(results[0].coicopAccuracy).toBeGreaterThanOrEqual(0.95)
   })
 
   it('avec du bruit OCR, la tranche « basse » est nettement moins fiable', () => {
@@ -53,10 +50,10 @@ describe('précision du pipeline local sur le jeu annoté', () => {
     expect(c.haute.accuracy).toBeGreaterThan(c.basse.accuracy + 0.3)
   })
 
-  it('les erreurs de classement sont presque toujours signalées « à confirmer »', () => {
-    // sans bruit il n'y a que 3 erreurs (dont 1 code du dictionnaire sûr de lui,
-    // « MCCAIN AIRFRY »), d'où un seuil plus bas qu'avec du bruit
-    expect(results[0].errorDetection).toBeGreaterThanOrEqual(0.6)
+  it('avec du bruit OCR, les erreurs de classement sont presque toujours signalées « à confirmer »', () => {
+    // Sans bruit il ne reste qu'une erreur (« MCCAIN AIRFRY », code sûr du dictionnaire) :
+    // le taux de détection n'y est pas significatif, on le mesure avec du bruit.
+    expect(results[0.03].errorDetection).toBeGreaterThanOrEqual(0.7)
     expect(results[0.06].errorDetection).toBeGreaterThanOrEqual(0.9)
   })
 })

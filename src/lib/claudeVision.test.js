@@ -64,7 +64,7 @@ describe('promotions de lot (ticket Celio)', () => {
     expect(total(d)).toBe(107.96)
   })
   it('ne touche pas un vrai produit « 6 x 1,50EUR » sans remise', () => {
-    const d = toDraft({ store: '', date: '', total_paid: 9, items: [{ raw: 'EAU 6 x 1,50EUR', product: 'Eau', quantity: 1, unit_price: 9, discount: 0, net: 9, coicop: '02.1.2', confidence: 0.9 }], promotions: [] })
+    const d = toDraft({ store: '', date: '', total_paid: 9, items: [{ raw: 'EAU 6 x 1,50EUR', product: 'Eau', quantity: 1, unit_price: 9, discount: 0, net: 9, coicop: '01.2.5', confidence: 0.9 }], promotions: [] })
     expect(d.items).toHaveLength(1)
     expect(d.items[0].net).toBe(9)
   })

@@ -86,7 +86,7 @@
      "unitPrice": 2.79,
      "discount": 0,
      "net": 2.79,
-     "coicop": "02.1.2"
+     "coicop": "01.2.6"
     },
     {
      "raw": "Oeufs Pessieux 12X",
@@ -174,7 +174,7 @@
      "unitPrice": 2.75,
      "discount": 0,
      "net": 2.75,
-     "coicop": "02.1.2"
+     "coicop": "01.2.6"
     },
     {
      "raw": "BISCUITS SABLE BEU",
@@ -496,7 +496,7 @@
      "unitPrice": 1.99,
      "discount": 0,
      "net": 1.99,
-     "coicop": "02.1.2"
+     "coicop": "01.2.1"
     },
     {
      "raw": "LESSIVE LIQUIDE 3L",
@@ -560,7 +560,7 @@
      "unitPrice": 3.49,
      "discount": 0,
      "net": 3.49,
-     "coicop": "01.1.9"
+     "coicop": "01.2.2"
     }
    ]
   }

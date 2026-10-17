@@ -14,7 +14,7 @@
 
 import { loadTickets, saveTicket } from './ticketStore.js'
 import { loadLearned, mergeLearned } from './storage.js'
-import { isKnownCoicop } from '../data/coicop.js'
+import { isKnownCoicop, migrateLegacyCoicop } from '../data/coicop.js'
 
 export const BACKUP_VERSION = 1
 export const REMINDER_DAYS = 30
@@ -53,7 +53,7 @@ function isIsoDate(s) {
 
 // Champs conservés (liste blanche) : tout le reste est ignoré.
 const TICKET_FIELDS = ['engine', 'rawText', 'globalDiscountTotal', 'subtotalDeclared', 'totalDeclared', 'totalNet']
-const ITEM_TEXT = ['raw', 'normalized', 'brand', 'format', 'category', 'coicopLabel', 'source']
+const ITEM_TEXT = ['raw', 'normalized', 'brand', 'format', 'category', 'coicopLabel', 'source', 'coicopLegacy']
 const ITEM_FLAGS = ['needsReview', 'corrected', 'manual']
 const AMOUNT_TOLERANCE = 0.02
 
@@ -115,7 +115,11 @@ export function validateTicket(raw) {
     if (isNum(it.confidence)) clean.confidence = it.confidence
     if (it.readConfidence === null || isNum(it.readConfidence)) clean.readConfidence = it.readConfidence
     for (const f of ITEM_FLAGS) if (typeof it[f] === 'boolean') clean[f] = it[f]
-    items.push(clean)
+    const migrated = migrateLegacyCoicop(clean)
+    if (migrated !== clean) {
+      warnings.push(`ligne ${n} : code COICOP ${clean.coicop} (ancien sens « ${clean.coicopLabel} ») remplacé par ${migrated.coicop}, à confirmer`)
+    }
+    items.push(migrated)
   })
   if (errors.length) return { errors: errors.slice(0, 5).concat(errors.length > 5 ? [`… et ${errors.length - 5} autre(s)`] : []) }
 
