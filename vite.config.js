@@ -67,6 +67,6 @@ export default defineConfig({
   preview: { headers: securityHeaders },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.js'],
+    include: ['src/**/*.test.js', 'eval/**/*.test.js'],
   },
 })

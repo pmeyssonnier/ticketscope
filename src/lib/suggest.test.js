@@ -54,3 +54,10 @@ describe('suggestClassification — habillement', () => {
     expect(suggestClassification('Pain de campagne')?.coicop).toBe('01.1.1')
   })
 })
+
+describe('suggestClassification — accessoires de chaussures', () => {
+  it('lacets et semelles : chaussures, pas alimentaire', () => {
+    expect(suggestClassification('Lacet gros rond vert dik 90 brun')?.coicop).toBe('03.2.1')
+    expect(suggestClassification('Semelles confort')?.coicop).toBe('03.2.1')
+  })
+})

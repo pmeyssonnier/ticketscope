@@ -4,6 +4,9 @@ import { formatEUR, titleFromRaw, uid } from '../lib/format.js'
 import { suggestClassification } from '../lib/suggest.js'
 import { unitPriceFor } from '../lib/units.js'
 import { ConfidenceBadge } from './ui.jsx'
+import ReviewCard from './ReviewCard.jsx'
+import useMediaQuery from '../lib/useMediaQuery.js'
+import { computeNeedsReview, recomputeAmounts, reviewSummary, formatGap } from '../lib/review.js'
 
 const COICOP_OPTIONS = Object.keys(COICOP_LABELS)
 
@@ -12,16 +15,31 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
   const [date, setDate] = useState(draft.date || '')
   const [items, setItems] = useState(() => draft.items.map((it) => ({ ...it })))
   const [onlyReview, setOnlyReview] = useState(false)
+  // Téléphone : fiches (sans défilement horizontal) et barre d'écart collante.
+  const phone = useMediaQuery('(max-width: 640px)')
 
   function update(id, patch) {
     setItems((prev) =>
       prev.map((it) => {
         if (it.id !== id) return it
-        const next = { ...it, ...patch }
-        const q = Number(next.quantity) || 0
-        const up = Number(next.unitPrice) || 0
-        next.gross = +(q * up).toFixed(2)
-        next.net = +(next.gross + (Number(next.discount) || 0)).toFixed(2)
+        const next = recomputeAmounts({ ...it, ...patch })
+        // Modifier la ligne = l'avoir relue : la confiance de lecture passe à 100 %.
+        if (it.readConfidence != null) {
+          next.readConfidence = 1
+          next.needsReview = computeNeedsReview(next)
+        }
+        return next
+      }),
+    )
+  }
+
+  // « Lecture vérifiée » sans rien modifier.
+  function confirmRead(id) {
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.id !== id) return it
+        const next = { ...it, readConfidence: 1 }
+        next.needsReview = computeNeedsReview(next)
         return next
       }),
     )
@@ -78,17 +96,15 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
     setOnlyReview(false) // s'assurer que la nouvelle ligne est visible
   }
 
-  const totals = useMemo(() => {
-    const gross = +items.reduce((a, b) => a + (Number(b.gross) || 0), 0).toFixed(2)
-    const discount = +items.reduce((a, b) => a + (Number(b.discount) || 0), 0).toFixed(2)
-    const net = +(gross + discount + (draft.globalDiscountTotal || 0)).toFixed(2)
-    return { gross, discount, net }
-  }, [items, draft.globalDiscountTotal])
-
-  const declared = draft.totalDeclared
-  const diff = declared != null ? +(totals.net - declared).toFixed(2) : null
-  const reconciled = diff != null && Math.abs(diff) < 0.02
-  const reviewCount = items.filter((it) => it.needsReview).length
+  const summary = useMemo(
+    () => reviewSummary(items, draft.globalDiscountTotal, draft.totalDeclared),
+    [items, draft.globalDiscountTotal, draft.totalDeclared],
+  )
+  const totals = summary
+  const declared = summary.declared
+  const diff = summary.diff
+  const reconciled = summary.reconciled
+  const reviewCount = summary.reviewCount
   const visibleItems = onlyReview ? items.filter((it) => it.needsReview) : items
 
   function save() {
@@ -167,7 +183,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
         </div>
       </div>
 
-      {declared != null && (
+      {!phone && declared != null && (
         <div className={`banner ${reconciled ? 'ok' : 'warn'}`}>
           <span className="b-ico">{reconciled ? '✓' : '⚠'}</span>
           <span>
@@ -187,6 +203,21 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
         </div>
       )}
 
+      {phone ? (
+        <div className="rcards">
+          {visibleItems.map((it) => (
+            <ReviewCard
+              key={it.id}
+              it={it}
+              onUpdate={update}
+              onCorrect={correctClassification}
+              onSuggest={applySuggestion}
+              onRemove={removeItem}
+              onConfirmRead={confirmRead}
+            />
+          ))}
+        </div>
+      ) : (
       <div className="table-wrap">
         <table className="data">
           <thead>
@@ -291,7 +322,15 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
                   />
                 </td>
                 <td>
-                  <ConfidenceBadge value={it.confidence} />
+                  <div style={{ display: 'grid', gap: 4, justifyItems: 'start' }}>
+                    {it.readConfidence != null && <ConfidenceBadge kind="read" value={it.readConfidence} />}
+                    <ConfidenceBadge kind="class" value={it.confidence} />
+                    {it.readConfidence != null && it.readConfidence < 0.75 && (
+                      <button type="button" className="link-btn" onClick={() => confirmRead(it.id)}>
+                        ✓ Lecture vérifiée
+                      </button>
+                    )}
+                  </div>
                 </td>
                 <td>
                   <button
@@ -308,6 +347,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
           </tbody>
         </table>
       </div>
+      )}
 
       <div className="btn-row" style={{ marginTop: 10 }}>
         <button className="btn" onClick={addItem}>
@@ -341,18 +381,55 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
         </div>
       )}
 
-      <div className="btn-row" style={{ marginTop: 16 }}>
-        <button className="btn primary" onClick={save} disabled={!items.length}>
-          💾 Enregistrer le ticket
-        </button>
-        <button className="btn" onClick={onCancel}>
-          Annuler
-        </button>
-        <div style={{ flex: 1 }} />
-        <div className="muted" style={{ alignSelf: 'center' }}>
-          {items.length} ligne(s) · net {formatEUR(totals.net)}
+      {phone ? (
+        <>
+          <div className="btn-row" style={{ marginTop: 12 }}>
+            <button className="btn" onClick={onCancel}>
+              Annuler
+            </button>
+          </div>
+          <div className={`review-bar ${declared == null ? '' : reconciled ? 'ok' : 'warn'}`} role="status" aria-live="polite" data-testid="review-bar">
+            <div className="rb-main">
+              {declared != null ? (
+                <>
+                  <strong>
+                    {reconciled ? '✓ Total cohérent' : `⚠ Écart ${formatGap(diff, formatEUR)}`}
+                  </strong>
+                  <span>
+                    Ticket {formatEUR(declared)} · recalculé {formatEUR(totals.net)}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <strong>Net recalculé {formatEUR(totals.net)}</strong>
+                  <span>{items.length} ligne(s) · total du ticket non lu</span>
+                </>
+              )}
+              {reviewCount > 0 && (
+                <button type="button" className="rb-chip" onClick={() => setOnlyReview((v) => !v)}>
+                  {reviewCount} à confirmer {onlyReview ? '· tout afficher' : '· filtrer'}
+                </button>
+              )}
+            </div>
+            <button className="btn primary" onClick={save} disabled={!items.length}>
+              💾 Enregistrer
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="btn-row" style={{ marginTop: 16 }}>
+          <button className="btn primary" onClick={save} disabled={!items.length}>
+            💾 Enregistrer le ticket
+          </button>
+          <button className="btn" onClick={onCancel}>
+            Annuler
+          </button>
+          <div style={{ flex: 1 }} />
+          <div className="muted" style={{ alignSelf: 'center' }}>
+            {items.length} ligne(s) · net {formatEUR(totals.net)}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

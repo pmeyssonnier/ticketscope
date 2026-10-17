@@ -16,7 +16,8 @@ function Side({ it }) {
       <div className="cmp-vals">
         <span className="cmp-net">{formatEUR(it.net)}</span>
         {it.coicop ? <span className="pill coicop">{it.coicop}</span> : <span className="muted">non classé</span>}
-        <ConfidenceBadge value={it.confidence} />
+        {it.readConfidence != null && <ConfidenceBadge kind="read" value={it.readConfidence} />}
+        <ConfidenceBadge kind="class" value={it.confidence} />
       </div>
     </div>
   )

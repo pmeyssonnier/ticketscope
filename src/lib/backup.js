@@ -94,6 +94,9 @@ export function validateTicket(raw) {
     if (it.confidence != null && !(isNum(it.confidence) && it.confidence >= 0 && it.confidence <= 1)) {
       errors.push(`ligne ${n} : confiance hors de [0 ; 1]`)
     }
+    if (it.readConfidence != null && !(isNum(it.readConfidence) && it.readConfidence >= 0 && it.readConfidence <= 1)) {
+      errors.push(`ligne ${n} : confiance de lecture hors de [0 ; 1]`)
+    }
     if (errors.length) return
     if (Math.abs(it.gross - it.quantity * it.unitPrice) > AMOUNT_TOLERANCE) {
       warnings.push(`ligne ${n} : brut ≠ quantité × prix unitaire`)
@@ -106,6 +109,7 @@ export function validateTicket(raw) {
     for (const f of ['quantity', 'unitPrice', 'gross', 'discount', 'net']) clean[f] = it[f]
     clean.coicop = isStr(it.coicop) && it.coicop ? it.coicop : null
     if (isNum(it.confidence)) clean.confidence = it.confidence
+    if (it.readConfidence === null || isNum(it.readConfidence)) clean.readConfidence = it.readConfidence
     for (const f of ITEM_FLAGS) if (typeof it[f] === 'boolean') clean[f] = it[f]
     items.push(clean)
   })

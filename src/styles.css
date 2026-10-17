@@ -1059,3 +1059,132 @@ table.data td .raw {
 .cmp-line.net-diff .cmp-status {
   color: #b45309;
 }
+
+/* --- Écran de correction : fiches (téléphone) et barre d'écart collante --- */
+.rcards {
+  display: grid;
+  gap: 10px;
+}
+
+.rcard {
+  border: 1px solid var(--slate-200);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--white);
+  display: grid;
+  gap: 8px;
+}
+
+.rcard.review {
+  background: var(--amber-50);
+  border-color: #fde68a;
+}
+
+.rcard-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.rcard-head .btn {
+  padding: 8px 12px;
+  flex: none;
+}
+
+.rcard .raw {
+  color: var(--slate-500);
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+
+.rcard label span,
+.rcard .rnet span {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--slate-500);
+  margin-bottom: 3px;
+}
+
+.rcard input,
+.rcard select {
+  /* 16 px : évite le zoom automatique de iOS au focus */
+  font-size: 1rem;
+  min-height: 42px;
+}
+
+.rgrid {
+  display: grid;
+  gap: 8px;
+}
+.rgrid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.rgrid.two {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+}
+
+.rnet strong {
+  display: block;
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  padding-top: 8px;
+}
+
+.rcard-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.review-bar {
+  position: sticky;
+  bottom: var(--nav-h, 64px);
+  z-index: 15;
+  margin: 12px -6px 0;
+  padding: 10px 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--white);
+  border: 1px solid var(--slate-200);
+  border-radius: 12px;
+  box-shadow: 0 -4px 14px rgba(15, 23, 42, 0.12);
+}
+.review-bar.ok {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+.review-bar.warn {
+  background: var(--amber-50);
+  border-color: #fde68a;
+  color: #92400e;
+}
+.review-bar .rb-main {
+  display: grid;
+  gap: 2px;
+  font-size: 0.78rem;
+  min-width: 0;
+}
+.review-bar .rb-main strong {
+  font-size: 0.92rem;
+}
+.rb-chip {
+  justify-self: start;
+  margin-top: 4px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.review-bar .btn.primary {
+  flex: none;
+  padding: 10px 14px;
+}

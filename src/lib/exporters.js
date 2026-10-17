@@ -37,7 +37,8 @@ export function flattenRows(tickets) {
         coicop: it.coicop || '',
         coicop_libelle: it.coicopLabel || '',
         categorie: safeCell(it.category || ''),
-        confiance: it.confidence,
+        confiance: it.confidence, // confiance de CLASSEMENT (COICOP)
+        confiance_lecture: it.readConfidence ?? '', // confiance de lecture (OCR / IA), vide si inconnue
       })
     }
   }

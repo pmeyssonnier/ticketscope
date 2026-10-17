@@ -237,3 +237,14 @@ describe('rappel de sauvegarde (audit)', () => {
     expect(r.text).toMatch(/il y a 37 jours/)
   })
 })
+
+describe('confiance de lecture dans les sauvegardes', () => {
+  it('conserve readConfidence (valeur ou null) et rejette une valeur hors bornes', async () => {
+    const d = await device()
+    const t = (readConfidence) => ticket('t' + String(readConfidence), '2024-03-12T10:00:00Z', { items: [item({ readConfidence })] })
+    const plan = await d.backup.planImport([t(0.42), t(null)])
+    expect(plan.toAdd.map((x) => x.items[0].readConfidence)).toEqual([0.42, null])
+    const bad = await d.backup.planImport([t(1.5)])
+    expect(bad.rejected[0].reasons.join(' ')).toMatch(/confiance de lecture/)
+  })
+})

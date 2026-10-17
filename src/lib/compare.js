@@ -26,7 +26,9 @@ export function ticketStats(t) {
   const declared = t && t.totalDeclared != null ? +Number(t.totalDeclared).toFixed(2) : null
   const diff = declared != null ? +(net - declared).toFixed(2) : null
   const classified = items.filter((it) => it.coicop).length
-  const review = items.filter((it) => it.needsReview || (Number(it.confidence) || 0) < 0.75).length
+  const review = items.filter(
+    (it) => it.needsReview || (Number(it.confidence) || 0) < 0.75 || (it.readConfidence != null && Number(it.readConfidence) < 0.75),
+  ).length
   const avgConf = lines
     ? +(items.reduce((a, b) => a + (Number(b.confidence) || 0), 0) / lines).toFixed(2)
     : null
