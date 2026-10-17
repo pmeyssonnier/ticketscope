@@ -145,6 +145,7 @@ describe('deux confiances : lecture et classement', () => {
     const p = buildPrompt()
     expect(p).not.toMatch(/boxer, chemise/i)
     expect(p).toMatch(/item_numbers/)
+    expect(p).toMatch(/sous-vêtements.*03\.1\.2/)
     expect(p).toMatch(/jamais d'un autre prix/i)
   })
 })
