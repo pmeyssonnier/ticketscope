@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toDraft, safeModel, reconcileDiscounts, DEFAULT_AI_MODEL } from './claudeVision.js'
+import { toDraft, safeModel, DEFAULT_AI_MODEL } from './claudeVision.js'
 import { monthKey } from './format.js'
 import { parseTicket } from './parser.js'
 
@@ -41,24 +41,35 @@ describe('toDraft — remises', () => {
   })
 })
 
-describe('reconcileDiscounts', () => {
-  const mk = (discount) => ({ gross: 7.99, discount, net: +(7.99 + discount).toFixed(2), needsReview: false })
-  it('ramène -3,30 à -3,98 pour atteindre le total payé', () => {
-    const items = [mk(-1.1), mk(-1.1), mk(-1.1), { gross: 17.99, discount: 0, net: 17.99 }, { gross: 29.99, discount: 0, net: 29.99 }, { gross: 39.99, discount: 0, net: 39.99 }]
-    const out = reconcileDiscounts(items, 107.96)
-    expect(+out.reduce((a, b) => a + b.discount, 0).toFixed(2)).toBe(-3.98)
-    expect(+out.reduce((a, b) => a + b.net, 0).toFixed(2)).toBe(107.96)
-    expect(out.slice(0, 3).every((it) => it.needsReview)).toBe(true)
-    expect(out[3].needsReview).toBeFalsy()
+describe('promotions de lot (ticket Celio)', () => {
+  const line = (raw, unit_price) => ({ raw, product: raw, quantity: 1, unit_price, discount: 0, net: unit_price, coicop: '03.1.2', confidence: 0.9 })
+  const six = [line('NIWOBIBOUP LIGHT PINK,XL', 7.99), line('MICUADRO BLUE SKY,XL', 7.99), line('DAXFORDMC BLUE,XXL', 17.99), line('DIBISTRIPE BLUE SKY,XL', 7.99), line('PASHAN BLUE NAVY,XXL', 29.99), line('LAPOUKI NAVY,XL', 39.99)]
+  const total = (d) => +d.items.reduce((a, b) => a + b.net, 0).toFixed(2)
+
+  it('ajoute la promotion comme une ligne négative', () => {
+    const d = toDraft({ store: 'Celio', date: '2026-10-17', total_paid: 107.96, items: six, promotions: [{ label: 'Boxers 3 x 19,99EUR', amount: -3.98, item_numbers: [1, 2, 4] }] })
+    expect(d.items).toHaveLength(7)
+    const promo = d.items[6]
+    expect(promo.net).toBe(-3.98)
+    expect(promo.unitPrice).toBe(-3.98)
+    expect(promo.coicop).toBe('03.1.2')
+    expect(total(d)).toBe(107.96)
+    expect(d.items.slice(0, 6).every((x) => x.discount === 0)).toBe(true)
   })
-  it('ne touche à rien si déjà cohérent ou sans remise', () => {
-    const ok = [mk(-1.33), mk(-1.33), mk(-1.32)]
-    expect(reconcileDiscounts(ok, 19.99)).toBe(ok)
-    const none = [{ gross: 5, discount: 0, net: 5 }]
-    expect(reconcileDiscounts(none, 9)).toBe(none)
+  it('convertit une promo restée parmi les produits en ligne négative', () => {
+    const promo = { raw: 'Boxers 3 x 19,99EUR', product: 'Boxers', quantity: 3, unit_price: 19.99, discount: -3.98, net: 55.99, coicop: '03.1.2', confidence: 0.9 }
+    const d = toDraft({ store: 'Celio', date: '', total_paid: 107.96, items: [...six, promo], promotions: [] })
+    expect(d.items).toHaveLength(7)
+    expect(d.items[6].net).toBe(-3.98)
+    expect(total(d)).toBe(107.96)
   })
-  it('ignore un écart non plausible', () => {
-    const items = [mk(-1), { gross: 10, discount: 0, net: 10 }]
-    expect(reconcileDiscounts(items, 1)).toBe(items)
+  it('ne touche pas un vrai produit « 6 x 1,50EUR » sans remise', () => {
+    const d = toDraft({ store: '', date: '', total_paid: 9, items: [{ raw: 'EAU 6 x 1,50EUR', product: 'Eau', quantity: 1, unit_price: 9, discount: 0, net: 9, coicop: '02.1.2', confidence: 0.9 }], promotions: [] })
+    expect(d.items).toHaveLength(1)
+    expect(d.items[0].net).toBe(9)
+  })
+  it('ignore une promotion sans montant négatif', () => {
+    const d = toDraft({ store: '', date: '', total_paid: 5, items: [line('A', 5)], promotions: [{ label: 'x', amount: 2, item_numbers: [] }] })
+    expect(d.items).toHaveLength(1)
   })
 })
