@@ -5,6 +5,13 @@
 import { monthKey } from './format.js'
 import { unitPriceFor } from './units.js'
 
+// Neutralise l'injection de formule (Excel/LibreOffice) : une cellule texte
+// commençant par = + - @ (ou tab/CR) serait interprétée comme une formule.
+export function safeCell(v) {
+  if (typeof v !== 'string') return v
+  return /^[=+\-@\t\r]/.test(v) ? `'${v}` : v
+}
+
 // Aplati les tickets en lignes exploitables (1 ligne = 1 produit).
 export function flattenRows(tickets) {
   const rows = []
@@ -15,11 +22,11 @@ export function flattenRows(tickets) {
         ticket_id: t.id,
         date: t.date || '',
         mois: monthKey(t.date),
-        magasin: t.store || '',
-        libelle_brut: it.raw,
-        produit: it.normalized || '',
-        marque: it.brand || '',
-        format: it.format || '',
+        magasin: safeCell(t.store || ''),
+        libelle_brut: safeCell(it.raw),
+        produit: safeCell(it.normalized || ''),
+        marque: safeCell(it.brand || ''),
+        format: safeCell(it.format || ''),
         quantite: it.quantity,
         prix_unitaire: it.unitPrice,
         brut: it.gross,
@@ -29,7 +36,7 @@ export function flattenRows(tickets) {
         unite_prix: up ? up.label : '',
         coicop: it.coicop || '',
         coicop_libelle: it.coicopLabel || '',
-        categorie: it.category || '',
+        categorie: safeCell(it.category || ''),
         confiance: it.confidence,
       })
     }
@@ -49,7 +56,7 @@ export function summarizeByCoicop(tickets) {
       net: 0,
       lignes: 0,
     }
-    cur.net = +(cur.net + r.net).toFixed(2)
+    cur.net = +(cur.net + (Number(r.net) || 0)).toFixed(2)
     cur.lignes += 1
     map.set(key, cur)
   }
@@ -79,7 +86,7 @@ export function exportCSV(tickets) {
   if (!rows.length) return
   const headers = Object.keys(rows[0])
   const esc = (v) => {
-    const s = v == null ? '' : String(v)
+    const s = v == null ? '' : String(safeCell(v))
     return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
   const csv = [
@@ -107,9 +114,9 @@ export async function exportXLSX(tickets) {
   const head = tickets.map((t) => ({
     ticket_id: t.id,
     date: t.date || '',
-    magasin: t.store || '',
+    magasin: safeCell(t.store || ''),
     nb_lignes: (t.items || []).length,
-    total_net: (t.items || []).reduce((a, b) => a + (b.net || 0), 0).toFixed(2),
+    total_net: +(t.items || []).reduce((a, b) => a + (Number(b.net) || 0), 0).toFixed(2),
     total_declare: t.totalDeclared ?? '',
   }))
   const wsHead = XLSX.utils.json_to_sheet(head)

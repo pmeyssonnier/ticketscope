@@ -21,7 +21,7 @@ fonctionne **hors connexion** une fois installée.
   Les PDF « numériques » sont lus via leur texte intégré ; les PDF scannés
   passent par l'OCR.
 - ✨ **Mode IA (Claude Vision)** en option : au lieu de l'OCR local, la photo (ou
-  le PDF) est lue par **Claude Haiku ou Sonnet**, qui extrait, normalise et
+  le PDF) est lue par **Claude Haiku 5.5 ou Sonnet 5.5**, qui extrait, normalise et
   classe les produits (COICOP) en un seul appel — bien plus précis sur les
   photos difficiles. **Clé API personnelle stockée sur l'appareil** (BYOK) ;
   aucun backend. En mode IA, l'image est envoyée à l'API Anthropic (l'OCR local
@@ -84,8 +84,8 @@ manuel à saisir. Pour héberger TicketScope à côté de vos autres projets :
 > Le mode ✨ IA (Claude Vision) est **BYOK** : la clé API reste sur l'appareil de
 > l'utilisateur (aucune variable d'environnement à configurer sur Vercel).
 
-Le fichier `netlify.toml` est conservé pour référence (déploiement Netlify
-équivalent) ; il n'a aucun effet sur Vercel.
+Le déploiement cible Vercel uniquement (`vercel.json`, qui définit aussi la CSP).
+L'intégration continue (`.github/workflows/ci.yml`) lance les tests et le build.
 
 ## Architecture
 

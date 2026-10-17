@@ -75,7 +75,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <img className="logo" src="/favicon.svg" alt="" />
+        <img className="logo" src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" />
         <div>
           <h1>TicketScope BE</h1>
           <p className="sub">Analyse de tickets · normalisation · COICOP</p>
@@ -84,7 +84,7 @@ export default function App() {
         <button className="icon-btn" onClick={() => setSettingsOpen(true)} aria-label="Réglages" title="Réglages">
           ⚙
         </button>
-        <span className="tag">v2.5</span>
+        <span className="tag">v{__APP_VERSION__}</span>
       </header>
 
       {settingsOpen && (

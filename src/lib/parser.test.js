@@ -155,3 +155,18 @@ describe('classifyItems', () => {
     expect(classified.filter((i) => i.needsReview)).toHaveLength(0)
   })
 })
+
+describe('parseTicket (régressions audit)', () => {
+  it('« SPARKLING » dans un produit ne désigne pas Spar', () => {
+    expect(parseTicket('SPARKLING WATER BIO 1,29\nPAIN 2,10\nTOTAL 3,39').store).not.toBe('Spar')
+  })
+  it('enseigne reconnue en en-tête', () => {
+    expect(parseTicket('COLRUYT\nPAIN 2,10\nTOTAL 2,10').store).toBe('Colruyt')
+  })
+  it('ligne « 2 x 1,50 3,00 » = quantité 2 à 1,50', () => {
+    const [it] = parseTicket('Colruyt\n2 x 1,50 3,00\nTOTAL 3,00').items
+    expect(it.quantity).toBe(2)
+    expect(it.unitPrice).toBe(1.5)
+    expect(it.net).toBe(3)
+  })
+})

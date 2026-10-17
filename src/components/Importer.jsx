@@ -193,7 +193,7 @@ export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
       {isClaude && (
         <div className="ai-panel ai-row">
           <span className="muted">
-            Modèle : <b>{ai.model.includes('haiku') ? 'Haiku 4.5' : 'Sonnet 5'}</b>
+            Modèle : <b>{ai.model.includes('haiku') ? 'Haiku 5.5' : 'Sonnet 5.5'}</b>
             {ai.apiKey.trim() ? '' : ' · clé API manquante'}
           </span>
           <button type="button" className="btn" style={{ padding: '5px 12px' }} onClick={onOpenSettings} disabled={busy}>

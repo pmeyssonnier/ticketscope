@@ -14,6 +14,20 @@ import { parseFormat } from './units.js'
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const COICOP_CODES = Object.keys(COICOP_LABELS)
 
+// Modèles proposés (Haiku 5.5 par défaut). `effort` : paramètre accepté par le modèle.
+export const AI_MODELS = {
+  'claude-haiku-5-5': { label: 'Haiku 5.5', effort: true },
+  'claude-sonnet-5-5': { label: 'Sonnet 5.5', effort: true },
+}
+export const DEFAULT_AI_MODEL = 'claude-haiku-5-5'
+const REQUEST_TIMEOUT_MS = 90_000
+const RETRY_STATUS = new Set([429, 529])
+
+// Ramène un identifiant stocké (ex. ancien « claude-haiku-4-5 ») à un modèle supporté.
+export function safeModel(model) {
+  return AI_MODELS[model] ? model : DEFAULT_AI_MODEL
+}
+
 // Redimensionne une image (max ~1600 px) pour limiter le coût en tokens.
 async function imageToBase64(file) {
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => null)
@@ -95,7 +109,8 @@ Réponds uniquement via le format JSON demandé.`
 }
 
 // files : tableau d'images (une ou plusieurs photos du même ticket) OU un PDF.
-export async function readReceiptWithClaude(files, { apiKey, model, onProgress }) {
+export async function readReceiptWithClaude(files, { apiKey, model: requestedModel, onProgress }) {
+  const model = safeModel(requestedModel)
   onProgress?.({ label: "Préparation de l'image…", progress: 0.15 })
   const content = []
   for (const f of files) {
@@ -108,46 +123,83 @@ export async function readReceiptWithClaude(files, { apiKey, model, onProgress }
   }
   content.push({ type: 'text', text: buildPrompt() })
 
-  onProgress?.({ label: `Lecture par Claude (${model.includes('haiku') ? 'Haiku' : 'Sonnet'})…`, progress: 0.5 })
+  onProgress?.({ label: `Lecture par Claude (${AI_MODELS[model].label})…`, progress: 0.5 })
 
-  const res = await fetch(ANTHROPIC_URL, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
+  const body = JSON.stringify({
+    model,
+    max_tokens: 16000,
+    messages: [{ role: 'user', content }],
+    output_config: {
+      // Extraction simple : peu de réflexion suffit (évite de consommer max_tokens).
+      ...(AI_MODELS[model].effort ? { effort: 'low' } : {}),
+      format: { type: 'json_schema', schema: RECEIPT_SCHEMA },
     },
-    body: JSON.stringify({
-      model,
-      max_tokens: 8000,
-      messages: [{ role: 'user', content }],
-      output_config: { format: { type: 'json_schema', schema: RECEIPT_SCHEMA } },
-    }),
   })
+
+  let res
+  for (let attempt = 0; ; attempt += 1) {
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS)
+    try {
+      res = await fetch(ANTHROPIC_URL, {
+        method: 'POST',
+        signal: ctrl.signal,
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body,
+      })
+    } catch (e) {
+      if (e.name === 'AbortError') throw new Error('Délai dépassé (90 s) — réessayez.')
+      throw new Error('Connexion à l’API Anthropic impossible.')
+    } finally {
+      clearTimeout(timer)
+    }
+    if (RETRY_STATUS.has(res.status) && attempt < 2) {
+      await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)))
+      continue
+    }
+    break
+  }
 
   if (!res.ok) {
     let msg = `Erreur API (${res.status})`
-    try {
-      const err = await res.json()
-      if (res.status === 401) msg = 'Clé API invalide ou manquante.'
-      else if (res.status === 429) msg = 'Limite de débit atteinte — réessayez dans un instant.'
-      else if (err?.error?.message) msg = err.error.message
-    } catch { /* ignore */ }
+    if (res.status === 401) msg = 'Clé API invalide ou manquante.'
+    else if (res.status === 429) msg = 'Limite de débit atteinte — réessayez dans un instant.'
+    else if (res.status === 529) msg = 'API Anthropic surchargée — réessayez dans un instant.'
+    else if (res.status === 413) msg = 'Image ou PDF trop volumineux.'
+    else {
+      try {
+        const err = await res.json()
+        if (err?.error?.message) msg = err.error.message
+      } catch { /* ignore */ }
+    }
     throw new Error(msg)
   }
 
   const json = await res.json()
+  if (json.stop_reason === 'refusal') throw new Error('Lecture refusée par le modèle.')
+  if (json.stop_reason === 'max_tokens') {
+    throw new Error('Ticket trop long : réponse tronquée. Essayez Sonnet ou scindez les photos.')
+  }
   const textBlock = (json.content || []).find((b) => b.type === 'text')
   if (!textBlock) throw new Error('Réponse vide de Claude.')
-  const parsed = JSON.parse(textBlock.text)
+  let parsed
+  try {
+    parsed = JSON.parse(textBlock.text)
+  } catch {
+    throw new Error('Réponse illisible de Claude (JSON invalide).')
+  }
 
   onProgress?.({ label: 'Analyse terminée', progress: 1 })
   return toDraft(parsed)
 }
 
 // Convertit la réponse de Claude en brouillon exploitable par l'écran de correction.
-function toDraft(parsed) {
+export function toDraft(parsed) {
   const items = (parsed.items || []).map((it) => {
     const coicop = it.coicop || null
     const confidence = Math.max(0, Math.min(1, Number(it.confidence) || 0))
@@ -165,7 +217,7 @@ function toDraft(parsed) {
       unitPrice,
       gross,
       discount,
-      net: it.net != null ? +Number(it.net).toFixed(2) : +(gross + discount).toFixed(2),
+      net: +(gross + discount).toFixed(2),
       coicop,
       coicopLabel: coicopLabel(coicop),
       category: it.category || (coicop ? '' : 'Inconnu'),

@@ -50,6 +50,9 @@ export function formatDate(iso) {
 
 export function monthKey(iso) {
   if (!iso) return 'Inconnu'
+  // Date ISO « AAAA-MM-JJ » : lue telle quelle (évite le décalage de fuseau).
+  const m = /^(\d{4})-(\d{2})-\d{2}/.exec(String(iso))
+  if (m && +m[2] >= 1 && +m[2] <= 12) return `${m[1]}-${m[2]}`
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return 'Inconnu'
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
