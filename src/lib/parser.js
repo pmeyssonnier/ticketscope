@@ -4,6 +4,7 @@
 
 import { normalizeStr, parseAmount } from './format.js'
 import { LINE_KEYWORDS } from '../data/dictionary.js'
+import { mulMoney, sumMoney, roundMoney, sameMoney } from './money.js'
 
 const RETAILERS = [
   'Delhaize', 'Carrefour', 'Colruyt', 'Aldi', 'Lidl', 'Intermarché',
@@ -151,7 +152,7 @@ export function parseTicket(text) {
     if (mult) {
       const qty = parseInt(mult[1], 10)
       const unit = parseAmount(mult[2])
-      if (qty > 1 && unit != null && Math.abs(qty * unit - parsed.amount) < 0.02) {
+      if (qty > 1 && unit != null && sameMoney(mulMoney(qty, unit), parsed.amount, 1)) {
         items.push({
           raw: parsed.label,
           rawNorm: norm,
@@ -169,11 +170,11 @@ export function parseTicket(text) {
     if (
       last &&
       last.rawNorm === norm &&
-      Math.abs(last.unitPrice - parsed.amount) < 0.001 &&
+      sameMoney(last.unitPrice, parsed.amount) &&
       last.discount === 0
     ) {
       last.quantity += 1
-      last.gross = +(last.unitPrice * last.quantity).toFixed(2)
+      last.gross = mulMoney(last.quantity, last.unitPrice)
     } else {
       items.push({
         raw: parsed.label,
@@ -190,18 +191,16 @@ export function parseTicket(text) {
   const cleanItems = items.map((it) => ({
     raw: it.raw,
     quantity: it.quantity,
-    unitPrice: +it.unitPrice.toFixed(2),
-    gross: +it.gross.toFixed(2),
-    discount: +it.discount.toFixed(2),
-    net: +(it.gross + it.discount).toFixed(2),
+    unitPrice: roundMoney(it.unitPrice),
+    gross: roundMoney(it.gross),
+    discount: roundMoney(it.discount),
+    net: sumMoney([it.gross, it.discount]),
   }))
 
-  const globalDiscountTotal = +globalDiscounts.reduce((a, b) => a + b, 0).toFixed(2)
-  const computedGross = +cleanItems.reduce((a, b) => a + b.gross, 0).toFixed(2)
-  const computedDiscount = +(
-    cleanItems.reduce((a, b) => a + b.discount, 0) + globalDiscountTotal
-  ).toFixed(2)
-  const computedTotal = +(computedGross + computedDiscount).toFixed(2)
+  const globalDiscountTotal = sumMoney(globalDiscounts)
+  const computedGross = sumMoney(cleanItems.map((b) => b.gross))
+  const computedDiscount = sumMoney([...cleanItems.map((b) => b.discount), globalDiscountTotal])
+  const computedTotal = sumMoney([computedGross, computedDiscount])
 
   return {
     store,

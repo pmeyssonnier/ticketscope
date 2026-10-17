@@ -2,6 +2,7 @@
 // et par l'OCR local, pour mesurer la différence de lecture et de classement.
 
 import { normalizeStr } from './format.js'
+import { sumMoney, roundMoney, diffMoney, sameMoney } from './money.js'
 
 // Moteur d'import d'un ticket : 'ia' (Claude Vision) ou 'local' (OCR / texte).
 // Les anciens tickets n'ont pas le champ `engine` : on le déduit de la source
@@ -22,9 +23,9 @@ export function ticketStats(t) {
   const items = (t && t.items) || []
   const lines = items.length
   const units = items.reduce((a, b) => a + (Number(b.quantity) || 0), 0)
-  const net = +items.reduce((a, b) => a + (Number(b.net) || 0), 0).toFixed(2)
-  const declared = t && t.totalDeclared != null ? +Number(t.totalDeclared).toFixed(2) : null
-  const diff = declared != null ? +(net - declared).toFixed(2) : null
+  const net = sumMoney(items.map((b) => Number(b.net) || 0))
+  const declared = t && t.totalDeclared != null ? roundMoney(t.totalDeclared) : null
+  const diff = declared != null ? diffMoney(net, declared) : null
   const classified = items.filter((it) => it.coicop).length
   const review = items.filter(
     (it) => it.needsReview || (Number(it.confidence) || 0) < 0.75 || (it.readConfidence != null && Number(it.readConfidence) < 0.75),
@@ -78,7 +79,7 @@ const MATCH_THRESHOLD = 0.5
 export function lineSimilarity(a, b) {
   const rawSim = diceCoefficient(anchor(a), anchor(b))
   const nameSim = diceCoefficient(normalizeStr(a.normalized), normalizeStr(b.normalized))
-  const netEq = a.net != null && b.net != null && Math.abs(Number(a.net) - Number(b.net)) < 0.01
+  const netEq = a.net != null && b.net != null && sameMoney(a.net, b.net)
   return Math.max(rawSim, nameSim * 0.9) + (netEq ? 0.03 : 0)
 }
 
@@ -128,6 +129,6 @@ export function pairStatus(pair) {
   if (a && !b) return 'only-a'
   if (b && !a) return 'only-b'
   if ((a.coicop || null) !== (b.coicop || null)) return 'coicop-diff'
-  if (Math.abs((Number(a.net) || 0) - (Number(b.net) || 0)) >= 0.01) return 'net-diff'
+  if (!sameMoney(Number(a.net) || 0, Number(b.net) || 0)) return 'net-diff'
   return 'same'
 }

@@ -278,6 +278,11 @@ par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.9.5** — **calculs en centimes** (`src/lib/money.js`) : sommes, écarts, totaux
+  et rapprochement du ticket passent par des centimes entiers (plus de bruit de
+  virgule flottante, arrondi commercial au demi-centime : 0,5 kg × 0,99 € = 0,50 €).
+  Les montants restent stockés en euros : tickets, sauvegardes et exports existants
+  sont inchangés.
 - **2.9.4** — classement local plus prudent (audit du 18/10) : les mots-clés
   s'appliquent à des **mots entiers** (« lait » ne matche plus « laitue ») ; une
   correspondance **apprise approximative** (faute OCR) n'est plus à 99 % : elle est

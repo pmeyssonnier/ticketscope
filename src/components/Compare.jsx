@@ -3,6 +3,7 @@ import { formatEUR, formatDate } from '../lib/format.js'
 import { COICOP_LABELS, coicopLabel } from '../data/coicop.js'
 import { ticketEngine, ticketStats, engineLabel, alignItems, pairStatus } from '../lib/compare.js'
 import { ConfidenceBadge } from './ui.jsx'
+import { diffMoney, roundMoney } from '../lib/money.js'
 
 const COICOP_OPTIONS = Object.keys(COICOP_LABELS)
 
@@ -89,8 +90,8 @@ function applyPatch(it, patch) {
   if ('coicop' in patch) next.coicopLabel = coicopLabel(patch.coicop)
   if ('net' in patch) {
     const q = Number(next.quantity) || 1
-    next.gross = +((Number(next.net) || 0) - (Number(next.discount) || 0)).toFixed(2)
-    next.unitPrice = +(next.gross / q).toFixed(2)
+    next.gross = diffMoney(Number(next.net) || 0, Number(next.discount) || 0)
+    next.unitPrice = roundMoney(next.gross / q)
   }
   return next
 }
@@ -175,7 +176,7 @@ export default function Compare({ a, b, onClose, onUpdateTicket }) {
   const pct = (n) => (n == null ? '—' : `${Math.round(n * 100)} %`)
   const dNum = (x, y, fmt = (v) => v) => {
     if (x == null || y == null) return ''
-    const d = +(x - y).toFixed(2)
+    const d = diffMoney(x, y)
     if (!d) return '='
     return (d > 0 ? '+' : '') + fmt(d)
   }

@@ -17,6 +17,7 @@ import { flattenRows } from '../lib/exporters.js'
 import { formatEUR, monthKey } from '../lib/format.js'
 import { coicopDivisionLabel } from '../data/coicop.js'
 import { Kpi, Empty } from './ui.jsx'
+import { sumMoney, roundMoney } from '../lib/money.js'
 
 const PALETTE = ['#0d9488', '#14b8a6', '#f59e0b', '#6366f1', '#e11d48', '#0ea5e9', '#84cc16', '#a855f7', '#f43f5e', '#64748b']
 
@@ -24,7 +25,7 @@ function groupSum(rows, keyFn) {
   const m = new Map()
   for (const r of rows) {
     const k = keyFn(r) || '—'
-    m.set(k, +((m.get(k) || 0) + r.net).toFixed(2))
+    m.set(k, sumMoney([m.get(k) || 0, r.net]))
   }
   return [...m.entries()].map(([name, value]) => ({ name, value }))
 }
@@ -35,9 +36,9 @@ export default function Dashboard({ tickets }) {
   const rows = useMemo(() => flattenRows(tickets), [tickets])
 
   const stats = useMemo(() => {
-    const net = +rows.reduce((a, b) => a + b.net, 0).toFixed(2)
-    const savings = +rows.reduce((a, b) => a + Math.min(b.remise, 0), 0).toFixed(2)
-    const avg = tickets.length ? +(net / tickets.length).toFixed(2) : 0
+    const net = sumMoney(rows.map((b) => b.net))
+    const savings = sumMoney(rows.map((b) => Math.min(b.remise, 0)))
+    const avg = tickets.length ? roundMoney(net / tickets.length) : 0
     return { net, savings: Math.abs(savings), avg }
   }, [rows, tickets])
 

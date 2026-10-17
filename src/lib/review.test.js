@@ -58,3 +58,20 @@ describe('formatGap', () => {
     expect(formatGap(null, eur)).toBe('—')
   })
 })
+
+describe('montants en centimes (review)', () => {
+  it('recomputeAmounts arrondit au demi-centime (0,5 kg × 0,99 € = 0,50 €)', () => {
+    const r = recomputeAmounts({ quantity: 0.5, unitPrice: 0.99, discount: 0 })
+    expect(r.gross).toBe(0.5)
+    expect(r.net).toBe(0.5)
+  })
+
+  it('reviewSummary : somme exacte et rapprochement à 1 centime', () => {
+    const items = Array.from({ length: 10 }, () => ({ gross: 0.1, discount: 0, net: 0.1 }))
+    expect(reviewSummary(items, 0, 1).reconciled).toBe(true)
+    expect(reviewSummary(items, 0, 1).diff).toBe(0)
+    expect(reviewSummary(items, 0, 1.01).reconciled).toBe(true) // 1 centime d'arrondi toléré
+    expect(reviewSummary(items, 0, 1.02).reconciled).toBe(false)
+    expect(reviewSummary(items, 0, 1.02).diff).toBe(-0.02)
+  })
+})

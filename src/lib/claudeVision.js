@@ -11,6 +11,7 @@ import { COICOP_LABELS, coicopLabel } from '../data/coicop.js'
 import { uid, normalizeStr, titleFromRaw } from './format.js'
 import { parseFormat } from './units.js'
 import { computeNeedsReview } from './review.js'
+import { roundMoney, mulMoney, sumMoney } from './money.js'
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const COICOP_CODES = Object.keys(COICOP_LABELS)
@@ -237,7 +238,7 @@ export async function readReceiptWithClaude(files, { apiKey, model: requestedMod
 const PROMO_LINE = /\b\d+\s*[x×]\s*\d+[.,]\d{2}\s*(?:eur|€)/i
 
 function discountLine(item, amount, label, coicop) {
-  const net = +Number(amount).toFixed(2)
+  const net = roundMoney(amount)
   return {
     ...item,
     raw: label || item.raw,
@@ -300,9 +301,9 @@ export function toDraft(parsed) {
     const confidence = clamp01(it.class_confidence ?? it.confidence)
     const readConfidence = it.read_confidence != null ? clamp01(it.read_confidence) : null
     const quantity = Number(it.quantity) || 1
-    const unitPrice = +(Number(it.unit_price) || 0).toFixed(2)
-    const discount = +(Number(it.discount) || 0).toFixed(2)
-    const gross = +(quantity * unitPrice).toFixed(2)
+    const unitPrice = roundMoney(Number(it.unit_price) || 0)
+    const discount = roundMoney(Number(it.discount) || 0)
+    const gross = mulMoney(quantity, unitPrice)
     const line = {
       id: uid('it'),
       raw: it.raw || it.product || '',
@@ -313,7 +314,7 @@ export function toDraft(parsed) {
       unitPrice,
       gross,
       discount,
-      net: +(gross + discount).toFixed(2),
+      net: sumMoney([gross, discount]),
       coicop,
       coicopLabel: coicopLabel(coicop),
       category: it.category || (coicop ? '' : 'Inconnu'),
@@ -332,6 +333,6 @@ export function toDraft(parsed) {
     items: withPromotionLines(namePromotedItems(items, parsed.promotions), parsed.promotions),
     globalDiscountTotal: 0,
     subtotalDeclared: null,
-    totalDeclared: parsed.total_paid != null ? +Number(parsed.total_paid).toFixed(2) : null,
+    totalDeclared: parsed.total_paid != null ? roundMoney(parsed.total_paid) : null,
   }
 }
