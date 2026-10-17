@@ -118,7 +118,7 @@ Consignes :
 - "format" = contenance d'UN exemplaire telle qu'imprimée : poids ("750 g", "1 kg"), volume ("880 ml", "1 L", "37,5 cl"), ou nombre ("12 pièces"). Mets "vrac" si vendu au poids, "" si aucune contenance.
 - Vêtements et chaussures : le libellé est souvent un nom de modèle suivi de la couleur et de la taille (« DAXFORDMC BLUE,XXL »). Garde-le tel quel dans "raw" ; dans "product", indique le type d'article s'il se déduit (boxer, chemise, pull…), sinon le nom du modèle.
 - Rattache une réduction "sur article" au produit concerné : "discount" est négatif, "net" = quantity×unit_price + discount.
-- Promotion de lot (ex. « Boxers 3 x 19,99EUR = -3,98 » : un libellé suivi d'un montant NÉGATIF) : ce n'est PAS un produit. Ne la mets JAMAIS dans "items" ; décris-la dans "promotions" avec "label" (libellé imprimé), "amount" (négatif, tel qu'imprimé) et "item_numbers" (rang, à partir de 1, dans "items", des articles concernés : ceux marqués du même signe, p. ex. « a »). Chaque article concerné garde SON propre prix imprimé (7,99), jamais le prix du lot ; ne mets pas non plus "discount" sur ces articles, c'est le code qui répartit la promotion.
+- Promotion de lot (ex. « Boxers 3 x 19,99EUR = -3,98 » : un libellé suivi d'un montant NÉGATIF) : ce n'est PAS un produit. Ne la mets JAMAIS dans "items" ; décris-la dans "promotions" avec "label" (libellé imprimé), "amount" (négatif, tel qu'imprimé) et "item_numbers" (rang, à partir de 1, dans "items", des articles concernés, p. ex. ceux marqués « a »). Chaque article concerné garde SON propre prix imprimé (7,99), jamais le prix du lot, et n'a pas de "discount" pour cette promotion.
 - Contrôle final : la somme des "net" de toutes les lignes doit être égale à "total_paid".
 - Attribue le code COICOP le plus adapté depuis CETTE liste (n'invente pas d'autre code ; si vraiment inconnu, mets "") et une "category" courte en français :
 ${list}
@@ -224,68 +224,44 @@ export async function readReceiptWithClaude(files, { apiKey, model: requestedMod
 }
 
 // Convertit la réponse de Claude en brouillon exploitable par l'écran de correction.
-// Une ligne « N x prix EUR » du modèle qui est en fait une promotion de lot
-// (libellé + montant négatif) ne doit pas être comptée comme un produit.
+// Une promotion de lot (« Boxers 3 x 19,99EUR = -3,98 ») est gardée telle quelle :
+// une ligne négative dans la liste, sans rattachement aux articles. Le total du
+// ticket reste exact et l'utilisateur la voit et la corrige comme n'importe quelle ligne.
 const PROMO_LINE = /\b\d+\s*[x×]\s*\d+[.,]\d{2}\s*(?:eur|€)/i
 
-// Applique les promotions de lot : le montant imprimé est réparti à parts égales
-// sur les articles concernés (centimes d'écart sur le dernier). Sans article
-// identifiable, la remise reste globale (comptée dans le total, sans ligne).
-export function applyPromotions(items, promotions) {
-  let list = items.map((it) => ({ ...it }))
-  let globalDiscountTotal = 0
-  // Filet de sécurité : promo restée dans les produits -> retirée, remise globale.
-  list = list.filter((it) => {
-    if (!(it.discount < 0 && PROMO_LINE.test(it.raw || ''))) return true
-    globalDiscountTotal += it.discount
-    return false
-  })
-  for (const promo of Array.isArray(promotions) ? promotions : []) {
-    const amount = +Number(promo?.amount).toFixed(2)
-    if (!(amount < 0)) continue
-    const idx = [...new Set((promo.item_numbers || []).map((n) => Number(n) - 1))].filter(
-      (i) => Number.isInteger(i) && i >= 0 && i < items.length,
-    )
-    const targets = idx.map((i) => items[i]).map((orig) => list.find((it) => it.id === orig.id)).filter(Boolean)
-    if (!targets.length) {
-      globalDiscountTotal += amount
-      continue
-    }
-    let left = amount
-    targets.forEach((it, k) => {
-      const share = k === targets.length - 1 ? +left.toFixed(2) : +(amount / targets.length).toFixed(2)
-      left = +(left - share).toFixed(2)
-      it.discount = +(it.discount + share).toFixed(2)
-      it.net = +(it.gross + it.discount).toFixed(2)
-    })
+function discountLine(item, amount, label, coicop) {
+  const net = +Number(amount).toFixed(2)
+  return {
+    ...item,
+    raw: label || item.raw,
+    normalized: 'Remise',
+    brand: '',
+    format: '',
+    quantity: 1,
+    unitPrice: net,
+    gross: net,
+    discount: 0,
+    net,
+    coicop: coicop || null,
+    coicopLabel: coicopLabel(coicop || null),
+    category: 'Remise',
   }
-  return { items: list, globalDiscountTotal: +globalDiscountTotal.toFixed(2) }
 }
 
-// Réconcilie les remises avec le total payé imprimé : si la somme des lignes
-// s'écarte du total, que des remises existent et que l'écart reste plausible
-// (promotion mal lue), on ajuste ces remises proportionnellement et on marque
-// les lignes touchées « à confirmer ». Sans remise lue, on ne touche à rien.
-export function reconcileDiscounts(items, totalPaid, extra = 0) {
-  const total = Number(totalPaid)
-  if (!(total > 0)) return items
-  const sum = (arr, k) => +arr.reduce((a, b) => a + (Number(b[k]) || 0), 0).toFixed(2)
-  const diff = +(total - sum(items, 'net') - (Number(extra) || 0)).toFixed(2)
-  if (Math.abs(diff) < 0.02) return items
-  const targets = items.filter((it) => it.discount < 0)
-  const oldDisc = sum(targets, 'discount')
-  if (!targets.length || oldDisc >= 0) return items
-  const newDisc = +(oldDisc + diff).toFixed(2)
-  const ratio = newDisc / oldDisc
-  if (newDisc >= 0 || ratio < 0.5 || ratio > 2) return items
-  let left = newDisc
-  const last = targets[targets.length - 1]
-  return items.map((it) => {
-    if (!targets.includes(it)) return it
-    const discount = it === last ? +left.toFixed(2) : +(it.discount * ratio).toFixed(2)
-    left = +(left - discount).toFixed(2)
-    return { ...it, discount, net: +(it.gross + discount).toFixed(2), needsReview: true }
-  })
+// Ajoute les promotions (liste « promotions » de la réponse) et convertit en
+// ligne négative une promotion restée parmi les produits (remise négative +
+// libellé « N x prix EUR »).
+export function withPromotionLines(items, promotions) {
+  const out = items.map((it) =>
+    it.discount < 0 && PROMO_LINE.test(it.raw || '') ? discountLine(it, it.discount, it.raw, it.coicop) : it,
+  )
+  for (const promo of Array.isArray(promotions) ? promotions : []) {
+    const amount = Number(promo?.amount)
+    if (!(amount < 0)) continue
+    const first = (promo.item_numbers || []).map((n) => items[Number(n) - 1]).find((x) => x && x.coicop)
+    out.push(discountLine({ id: uid('it'), confidence: 0.8, source: 'ia', needsReview: false }, amount, promo.label || 'Remise', first && first.coicop))
+  }
+  return out
 }
 
 export function toDraft(parsed) {
@@ -315,15 +291,14 @@ export function toDraft(parsed) {
       needsReview: !coicop || confidence < 0.75 || discount < -gross,
     }
   })
-  const { items: promoItems, globalDiscountTotal } = applyPromotions(items, parsed.promotions)
   return {
     id: uid('tk'),
     createdAt: new Date().toISOString(),
     engine: 'ia',
     store: parsed.store || 'Magasin inconnu',
     date: parsed.date || null,
-    items: reconcileDiscounts(promoItems, parsed.total_paid, globalDiscountTotal),
-    globalDiscountTotal,
+    items: withPromotionLines(items, parsed.promotions),
+    globalDiscountTotal: 0,
     subtotalDeclared: null,
     totalDeclared: parsed.total_paid != null ? +Number(parsed.total_paid).toFixed(2) : null,
   }
