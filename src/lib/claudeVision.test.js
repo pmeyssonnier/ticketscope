@@ -26,3 +26,17 @@ describe('dates', () => {
     expect(parseTicket('PAIN 1,00').date).toBeNull()
   })
 })
+
+describe('toDraft — remises', () => {
+  it('signale une remise supérieure au montant brut', () => {
+    const d = toDraft({ store: 'S', date: '', total_paid: 0, items: [{ raw: 'A', product: 'A', quantity: 1, unit_price: 1, discount: -3.98, net: -2.98, coicop: '01.1.1', confidence: 0.95 }] })
+    expect(d.items[0].needsReview).toBe(true)
+  })
+  it('garde une remise de lot répartie sur plusieurs lignes', () => {
+    const items = [-1.33, -1.33, -1.32].map((discount) => ({ raw: 'B', product: 'Boxer', quantity: 1, unit_price: 7.99, discount, net: 0, coicop: '03.1.2', confidence: 0.9 }))
+    const d = toDraft({ store: 'Celio', date: '', total_paid: 20, items })
+    expect(d.items.every((it) => !it.needsReview)).toBe(true)
+    expect(+d.items.reduce((a, b) => a + b.discount, 0).toFixed(2)).toBe(-3.98)
+    expect(+d.items.reduce((a, b) => a + b.net, 0).toFixed(2)).toBe(19.99)
+  })
+})
