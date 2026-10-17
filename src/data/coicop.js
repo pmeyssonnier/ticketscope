@@ -1,64 +1,44 @@
 // Référentiel COICOP 2018 (Classification of Individual Consumption by Purpose).
 //
-// Structure officielle : `coicop2018.js` (divisions, groupes, classes ; titres en
-// anglais), extraite du fichier COICOP_2018_English_structure.xlsx — empreinte
-// SHA-256 dans le JSON. Les libellés FRANÇAIS ci-dessous sont une traduction du
-// projet (la source est en anglais), pas un texte officiel. Seules les classes
-// de `ACTIVE` sont proposées dans l'interface et au mode IA ; les autres codes
-// officiels restent reconnus (import, export). Étendre `ACTIVE` = ajouter ici le
-// code et son libellé français, sans changer les anciens codes.
+// Structure officielle : `coicop2018.js` (divisions, groupes, classes) — codes et titres
+// anglais du fichier de l'ONU, titres FRANÇAIS de la liste de codes Eurostat
+// ESTAT:COICOP18 3.2 (les deux sources concordent sur les 264 codes). Pas encore de titres
+// néerlandais. Seules les classes de `ACTIVE` sont proposées dans l'interface et au mode IA ;
+// les autres codes officiels restent reconnus (import, export). Étendre `ACTIVE` = ajouter le
+// code ici, sans changer les anciens codes.
 //
-// Changement d'édition : remplacer le JSON, mettre à jour `ACTIVE` et migrer les
+// Changement d'édition : régénérer `coicop2018.js`, mettre à jour `ACTIVE` et migrer les
 // anciens codes explicitement (`COICOP_LEGACY_MIGRATIONS`) — jamais en silence.
 import official from './coicop2018.js'
 
 export const COICOP_REFERENCE = {
   id: 'coicop-2018', // identifiant écrit dans les exports
-  edition: official.source.edition,
-  source: `${official.source.file} (feuille ${official.source.sheet})`,
-  sha256: official.source.sha256,
-  language: 'fr (traduction du projet) ; titres officiels en anglais',
-  verified: true, // codes et titres anglais confrontés au fichier source
+  edition: official.sources[0].edition,
+  sources: official.sources.map((x) => `${x.file}${x.sheet ? ` (feuille ${x.sheet})` : ''}`),
+  sha256: official.sources.map((x) => x.sha256),
+  language: 'en et fr officiels ; nl : à venir',
+  verified: true, // codes et titres confrontés aux fichiers sources
   levels: ['division (01)', 'groupe (01.1)', 'classe (01.1.1)'],
 }
 
-// Titres officiels anglais : code → titre.
-const OFFICIAL = new Map(official.codes)
+// code → { en, fr } (titres officiels, suffixe de durabilité « (ND) » etc. inclus).
+const OFFICIAL = new Map(official.codes.map(([code, en, fr]) => [code, { en, fr }]))
 
-// Classes proposées par l'application (libellé français : traduction du projet).
-const ACTIVE = {
-  '01.1.1': 'Céréales et produits céréaliers',
-  '01.1.2': 'Viandes et autres parties d\'animaux terrestres abattus',
-  '01.1.3': 'Poissons et autres fruits de mer',
-  '01.1.4': 'Lait, autres produits laitiers et œufs',
-  '01.1.5': 'Huiles et graisses',
-  '01.1.6': 'Fruits et fruits à coque',
-  '01.1.7': 'Légumes, tubercules, plantains, bananes à cuire et légumineuses',
-  '01.1.8': 'Sucre, confiserie et desserts',
-  '01.1.9': 'Plats préparés et autres produits alimentaires',
-  '01.2.1': 'Jus de fruits et de légumes',
-  '01.2.2': 'Café et succédanés du café',
-  '01.2.3': 'Thé, maté et autres plantes pour infusion',
-  '01.2.4': 'Boissons au cacao',
-  '01.2.5': 'Eau',
-  '01.2.6': 'Boissons rafraîchissantes (sodas)',
-  '01.2.9': 'Autres boissons non alcoolisées',
-  '02.1.1': 'Spiritueux et liqueurs',
-  '02.1.2': 'Vin',
-  '02.1.3': 'Bière',
-  '02.1.9': 'Autres boissons alcoolisées',
-  '02.3.0': 'Tabac',
-  '03.1.1': 'Tissus pour vêtements',
-  '03.1.2': 'Vêtements',
-  '03.1.3': 'Autres articles d\'habillement et accessoires',
-  '03.1.4': 'Nettoyage, réparation, retouche et location de vêtements',
-  '03.2.1': 'Chaussures et autres articles chaussants',
-  '03.2.2': 'Nettoyage, réparation et location de chaussures',
-  '05.6.1': 'Biens ménagers non durables',
-}
+// Suffixe de durabilité de la nomenclature (ND non durable, SD semi-durable, D durable,
+// S service) : retiré à l'affichage, conservé dans les données.
+const plain = (title) => title.replace(/\s*\((?:ND|SD|D|S)\)\s*$/, '')
 
-// Libellé français par code proposé (interface, prompt du mode IA).
-export const COICOP_LABELS = ACTIVE
+// Classes proposées par l'application.
+const ACTIVE = [
+  '01.1.1', '01.1.2', '01.1.3', '01.1.4', '01.1.5', '01.1.6', '01.1.7', '01.1.8', '01.1.9',
+  '01.2.1', '01.2.2', '01.2.3', '01.2.4', '01.2.5', '01.2.6', '01.2.9',
+  '02.1.1', '02.1.2', '02.1.3', '02.1.9', '02.3.0',
+  '03.1.1', '03.1.2', '03.1.3', '03.1.4', '03.2.1', '03.2.2',
+  '05.6.1',
+]
+
+// Libellé français officiel par code proposé (interface, prompt du mode IA).
+export const COICOP_LABELS = Object.fromEntries(ACTIVE.map((c) => [c, plain(OFFICIAL.get(c).fr)]))
 
 // Anciens codes de la version interne (avant COICOP 2018 officielle) dont le SENS a
 // changé. Clé : ancien code ; `legacyLabel` : libellé qu'il portait (ce qui le
@@ -84,13 +64,10 @@ export function migrateTicketCoicop(ticket) {
   return changed ? { ...ticket, items } : ticket
 }
 
-// Division COICOP (1er niveau) pour agrégation macro (traduction du projet).
-export const COICOP_DIVISIONS = {
-  '01': 'Produits alimentaires et boissons non alcoolisées',
-  '02': 'Boissons alcoolisées, tabac et stupéfiants',
-  '03': 'Articles d\'habillement et chaussures',
-  '05': 'Ameublement, équipement ménager et entretien courant du logement',
-}
+// Divisions COICOP des ménages (01 à 13), libellés français officiels, pour agrégation macro.
+export const COICOP_DIVISIONS = Object.fromEntries(
+  official.codes.filter(([c]) => /^(0[1-9]|1[0-3])$/.test(c)).map(([c, , fr]) => [c, plain(fr)]),
+)
 
 const CODE_FORMAT = /^\d{2}(\.\d{1,2}){0,2}$/
 
@@ -104,10 +81,11 @@ export function isKnownCoicop(code) {
   return typeof code === 'string' && OFFICIAL.has(code)
 }
 
-// { label (fr, sinon titre officiel), titleEn, level, official: true } ou null.
+// { label (fr, sans suffixe), titleFr, titleEn, level, official: true } ou null.
 export function coicopInfo(code) {
   if (!isKnownCoicop(code)) return null
-  return { label: ACTIVE[code] || OFFICIAL.get(code), titleEn: OFFICIAL.get(code), level: coicopLevel(code), official: true }
+  const { en, fr } = OFFICIAL.get(code)
+  return { label: plain(fr), titleFr: fr, titleEn: en, level: coicopLevel(code), official: true }
 }
 
 // Niveau : 1 division, 2 groupe, 3 classe ; null si le format est invalide.
@@ -134,7 +112,7 @@ export function migrateLegacyCoicop(item) {
 
 export function coicopLabel(code) {
   if (!code) return 'Non classé'
-  return ACTIVE[code] || OFFICIAL.get(code) || code
+  return OFFICIAL.has(code) ? plain(OFFICIAL.get(code).fr) : code
 }
 
 export function coicopDivision(code) {
