@@ -14,12 +14,15 @@ import { parseFormat } from './units.js'
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const COICOP_CODES = Object.keys(COICOP_LABELS)
 
-// Modèles proposés (Haiku 5.5 par défaut). `effort` : paramètre accepté par le modèle.
+// Modèles proposés. Haiku 4.5 reste le défaut (éprouvé en production) ;
+// les modèles 5.x sont proposés en option.
 export const AI_MODELS = {
-  'claude-haiku-5-5': { label: 'Haiku 5.5', effort: true },
-  'claude-sonnet-5-5': { label: 'Sonnet 5.5', effort: true },
+  'claude-haiku-4-5': { label: 'Haiku 4.5' },
+  'claude-haiku-5-5': { label: 'Haiku 5.5' },
+  'claude-sonnet-5': { label: 'Sonnet 5' },
+  'claude-sonnet-5-5': { label: 'Sonnet 5.5' },
 }
-export const DEFAULT_AI_MODEL = 'claude-haiku-5-5'
+export const DEFAULT_AI_MODEL = 'claude-haiku-4-5'
 const REQUEST_TIMEOUT_MS = 90_000
 const RETRY_STATUS = new Set([429, 529])
 
@@ -99,6 +102,7 @@ Consignes :
 - Regroupe les lignes de produit strictement identiques (même libellé, même prix) en une seule avec "quantity" = nombre d'exemplaires.
 - "raw" = libellé exact imprimé sur le ticket. "product" = nom normalisé lisible en français. "brand" = marque si identifiable, sinon "".
 - "format" = contenance d'UN exemplaire telle qu'imprimée : poids ("750 g", "1 kg"), volume ("880 ml", "1 L", "37,5 cl"), ou nombre ("12 pièces"). Mets "vrac" si vendu au poids, "" si aucune contenance.
+- Vêtements et chaussures : le libellé est souvent un nom de modèle suivi de la couleur et de la taille (« DAXFORDMC BLUE,XXL »). Garde-le tel quel dans "raw" ; dans "product", indique le type d'article s'il se déduit (boxer, chemise, pull…), sinon le nom du modèle.
 - Rattache une réduction "sur article" au produit concerné : "discount" est négatif, "net" = quantity×unit_price + discount.
 - Attribue le code COICOP le plus adapté depuis CETTE liste (n'invente pas d'autre code ; si vraiment inconnu, mets "") et une "category" courte en français :
 ${list}
@@ -129,11 +133,7 @@ export async function readReceiptWithClaude(files, { apiKey, model: requestedMod
     model,
     max_tokens: 16000,
     messages: [{ role: 'user', content }],
-    output_config: {
-      // Extraction simple : peu de réflexion suffit (évite de consommer max_tokens).
-      ...(AI_MODELS[model].effort ? { effort: 'low' } : {}),
-      format: { type: 'json_schema', schema: RECEIPT_SCHEMA },
-    },
+    output_config: { format: { type: 'json_schema', schema: RECEIPT_SCHEMA } },
   })
 
   let res
@@ -195,7 +195,16 @@ export async function readReceiptWithClaude(files, { apiKey, model: requestedMod
   }
 
   onProgress?.({ label: 'Analyse terminée', progress: 1 })
-  return toDraft(parsed)
+  const draft = toDraft(parsed)
+  if (!draft.items.length) {
+    // Diagnostic : on expose ce que l'API a réellement renvoyé.
+    const out = json.usage?.output_tokens ?? '?'
+    throw new Error(
+      `Aucun produit lu (modèle ${model}, stop_reason ${json.stop_reason}, ${out} tokens de sortie). ` +
+        `Réponse : ${String(textBlock.text).slice(0, 300)}`,
+    )
+  }
+  return draft
 }
 
 // Convertit la réponse de Claude en brouillon exploitable par l'écran de correction.

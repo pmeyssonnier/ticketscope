@@ -25,6 +25,9 @@ const RULES = [
   { p: 1, coicop: '01.1.7', category: 'Légumes', kw: ['legume', 'tomate', 'oignon', 'carotte', 'salade', 'courgette', 'poivron', 'concombre', 'patate', 'brocoli', 'epinard', 'champignon', 'olive', 'mesclun', 'gazpacho', 'haricot', 'poireau'] },
   { p: 1, coicop: '01.1.6', category: 'Fruits', kw: ['fruit', 'pomme', 'banane', 'fraise', 'orange', 'raisin', 'poire', 'kiwi', 'citron', 'peche', 'abricot', 'ananas', 'mangue', 'melon', 'cerise', 'framboise', 'myrtille'] },
   { p: 1, coicop: '01.1.1', category: 'Pain et céréales', kw: ['pain', 'baguette', 'farine', 'riz', 'pates', 'couscous', 'biscotte', 'pistolet', 'croissant', 'viennoiserie', 'cereale'] },
+  { p: 1, coicop: '03.2.1', category: 'Chaussures', kw: ['chaussure', 'basket', 'sneaker', 'botte', 'bottine', 'sandale', 'mocassin', 'escarpin', 'pantoufle', 'tong', 'ballerine'] },
+  { p: 1, coicop: '03.1.3', category: 'Accessoires', kw: ['ceinture', 'echarpe', 'bonnet', 'gant', 'cravate', 'casquette', 'chapeau', 'foulard', 'chaussette', 'collant', 'bretelle', 'noeud papillon'] },
+  { p: 1, coicop: '03.1.2', category: 'Vêtements', kw: ['vetement', 'boxer', 'slip', 'calecon', 'chemise', 'chemisier', 'pantalon', 'jean', 'pull', 'gilet', 'cardigan', 'veste', 'manteau', 'blouson', 'parka', 'doudoune', 'imper', 'polo', 't shirt', 'tshirt', 'debardeur', 'sweat', 'jogging', 'legging', 'short', 'bermuda', 'jupe', 'robe', 'costume', 'blouse', 'pyjama', 'lingerie', 'soutien', 'maillot', 'peignoir', 'survet'] },
   { p: 0, coicop: '01.1.9', category: 'Produits alimentaires divers', kw: ['sauce', 'chips', 'snack', 'soupe', 'plat', 'quiche', 'pizza', 'surgele', 'conserve', 'apero', 'aperitif', 'grissini', 'ravioli', 'bami', 'pesto', 'epice'] },
 ]
 

@@ -4,10 +4,11 @@ import { monthKey } from './format.js'
 import { parseTicket } from './parser.js'
 
 describe('claudeVision', () => {
-  it('migre les anciens identifiants de modèle', () => {
-    expect(safeModel('claude-haiku-4-5')).toBe(DEFAULT_AI_MODEL)
-    expect(safeModel('claude-sonnet-5')).toBe(DEFAULT_AI_MODEL)
+  it('conserve les modèles connus et remplace les inconnus', () => {
+    expect(DEFAULT_AI_MODEL).toBe('claude-haiku-4-5')
+    expect(safeModel('claude-sonnet-5')).toBe('claude-sonnet-5')
     expect(safeModel('claude-sonnet-5-5')).toBe('claude-sonnet-5-5')
+    expect(safeModel('claude-foo')).toBe(DEFAULT_AI_MODEL)
   })
   it('recalcule le net au lieu de se fier au modèle', () => {
     const d = toDraft({ store: 'S', date: '', total_paid: 3, items: [{ raw: 'A', product: 'A', quantity: 2, unit_price: 1.5, discount: -0.5, net: 99, coicop: '', confidence: 0.9 }] })

@@ -2,6 +2,7 @@
 // Aucune donnée ne quitte l'appareil : conforme à l'usage hors-ligne de la PWA.
 
 import { normalizeStr, uid } from './format.js'
+import { AI_MODELS } from './claudeVision.js'
 
 const TICKETS_KEY = 'ticketscope.tickets.v1'
 const LEARNED_KEY = 'ticketscope.learned.v1'
@@ -80,17 +81,13 @@ export function clearLearned() {
 }
 
 // --- Réglages IA (moteur de lecture, modèle, clé API — locaux à l'appareil) ---
-const AI_DEFAULTS = { engine: 'local', model: 'claude-haiku-5-5', apiKey: '' }
-
-const AI_MODEL_IDS = ['claude-haiku-5-5', 'claude-sonnet-5-5']
+const AI_DEFAULTS = { engine: 'local', model: 'claude-haiku-4-5', apiKey: '' }
 
 export function loadAiSettings() {
   const s = read(AI_KEY, {})
   const merged = { ...AI_DEFAULTS, ...(s && typeof s === 'object' ? s : {}) }
-  // Migration : anciens identifiants (claude-haiku-4-5, claude-sonnet-5…) -> modèle courant.
-  if (!AI_MODEL_IDS.includes(merged.model)) {
-    merged.model = /sonnet/.test(String(merged.model)) ? 'claude-sonnet-5-5' : AI_DEFAULTS.model
-  }
+  // Modèle inconnu (identifiant retiré ou altéré) -> modèle par défaut.
+  if (!AI_MODELS[merged.model]) merged.model = AI_DEFAULTS.model
   return merged
 }
 
