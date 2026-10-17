@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { Suspense, lazy, useEffect, useState } from 'react'
 import Importer from './components/Importer.jsx'
 import ReviewTable from './components/ReviewTable.jsx'
-import Dashboard from './components/Dashboard.jsx'
 import History from './components/History.jsx'
 import Settings from './components/Settings.jsx'
 import {
@@ -12,6 +11,9 @@ import {
   loadAiSettings,
   saveAiSettings,
 } from './lib/storage.js'
+
+// Le tableau de bord embarque recharts (~350 ko) : chargé à la demande.
+const Dashboard = lazy(() => import('./components/Dashboard.jsx'))
 
 const NAV = [
   { id: 'import', label: 'Importer', ico: '📷' },
@@ -104,7 +106,9 @@ export default function App() {
         ) : view === 'import' ? (
           <Importer onDraft={handleDraft} ai={ai} updateAi={updateAi} onOpenSettings={() => setSettingsOpen(true)} />
         ) : view === 'dashboard' ? (
-          <Dashboard tickets={tickets} />
+          <Suspense fallback={<p className="hint">Chargement du tableau de bord…</p>}>
+            <Dashboard tickets={tickets} />
+          </Suspense>
         ) : (
           <History tickets={tickets} onDelete={handleDelete} onEdit={handleEdit} onUpdateTicket={handleUpdateTicket} />
         )}
