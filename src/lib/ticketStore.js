@@ -104,9 +104,53 @@ function idbBackend(db) {
   }
 }
 
-// Copie les tickets de l'ancien stockage vers IndexedDB. Les tickets sans date
-// de création reçoivent des dates décroissantes pour garder l'ordre d'origine.
+// Marqueur « migration terminée » : posé dès que la copie a réussi, AVANT la
+// suppression de l'ancienne clé. Si cette suppression échoue, une relance ne
+// recopie donc rien (pas d'écrasement d'un ticket modifié, pas de résurrection
+// d'un ticket supprimé).
+const MIGRATED_KEY = 'ticketscope.tickets.migrated.v1'
+
+function lsRemoveLegacy() {
+  try {
+    localStorage.removeItem(LEGACY_KEY)
+  } catch {
+    /* sans importance : la copie est faite et le marqueur posé */
+  }
+}
+
+// Ajoute à IndexedDB les tickets historiques ABSENTS (par id), sans jamais en
+// remplacer un existant, dans une seule transaction.
+function copyMissing(db, tickets) {
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(STORE, 'readwrite')
+    const store = t.objectStore(STORE)
+    const keysReq = store.getAllKeys()
+    keysReq.onsuccess = () => {
+      const present = new Set(keysReq.result)
+      tickets.forEach((ticket) => {
+        if (!present.has(ticket.id)) store.put(ticket)
+      })
+    }
+    t.oncomplete = () => resolve()
+    t.onerror = () => reject(t.error)
+    t.onabort = () => reject(t.error || new Error('Transaction annulée'))
+  })
+}
+
+// Copie les tickets de l'ancien stockage vers IndexedDB (une seule fois). Les
+// tickets sans date de création reçoivent des dates décroissantes pour garder
+// l'ordre d'origine.
 async function migrateLegacy(db) {
+  let done = false
+  try {
+    done = localStorage.getItem(MIGRATED_KEY) === '1'
+  } catch {
+    /* localStorage illisible : rien à migrer non plus */
+  }
+  if (done) {
+    lsRemoveLegacy() // nouvelle tentative de nettoyage, sans recopier
+    return
+  }
   const legacy = lsRead()
   if (!legacy.length) return
   const base = Date.now()
@@ -115,14 +159,13 @@ async function migrateLegacy(db) {
     id: t.id || uid('tk'),
     createdAt: t.createdAt || new Date(base - i * 1000).toISOString(),
   }))
-  await run(db, 'readwrite', (s) => {
-    migrated.forEach((t) => s.put(t))
-  })
+  await copyMissing(db, migrated)
   try {
-    localStorage.removeItem(LEGACY_KEY)
+    localStorage.setItem(MIGRATED_KEY, '1')
   } catch {
-    /* sans importance : la copie est faite */
+    /* sans marqueur, copyMissing reste sans danger (pas d'écrasement) */
   }
+  lsRemoveLegacy()
 }
 
 let backendPromise = null
