@@ -63,7 +63,7 @@ export function summarizeByCoicop(tickets) {
   return [...map.values()].sort((a, b) => b.net - a.net)
 }
 
-function download(filename, blob) {
+export function download(filename, blob) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url

@@ -1,10 +1,73 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { formatEUR, formatDate, normalizeStr } from '../lib/format.js'
-import { exportCSV, exportJSON, exportXLSX } from '../lib/exporters.js'
+import { exportCSV, exportJSON, exportXLSX, download } from '../lib/exporters.js'
+import { currentBackup, backupFilename, importBackup, describeImport } from '../lib/backup.js'
 import { loadLearned, exportLearnedData, mergeLearned, clearLearned } from '../lib/storage.js'
 import { ticketEngine, engineLabel } from '../lib/compare.js'
 import Compare from './Compare.jsx'
 import { ConfidenceBadge, Empty } from './ui.jsx'
+
+// Sauvegarde complète (tickets + dictionnaire appris) : export et import.
+// `status` vit dans History : l'écran change de structure (vide -> liste) pendant l'import.
+function BackupManager({ ticketCount, onReload, status, setStatus }) {
+  const [busy, setBusy] = useState(false)
+  const fileRef = useRef(null)
+
+  async function doExport() {
+    setBusy(true)
+    try {
+      const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : ''
+      const backup = await currentBackup(version)
+      download(backupFilename(), new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }))
+      setStatus(`✓ Sauvegarde exportée : ${backup.tickets.length} ticket(s), ${backup.learned.length} entrée(s) du dictionnaire.`)
+    } catch (e) {
+      console.error(e)
+      setStatus('❌ Export impossible.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function onImport(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setBusy(true)
+    try {
+      const data = JSON.parse(await file.text())
+      const result = await importBackup(data)
+      setStatus(describeImport(result))
+      if (!result.invalid) await onReload()
+    } catch (err) {
+      console.error(err)
+      setStatus(err instanceof SyntaxError ? '❌ Fichier illisible (JSON invalide).' : "❌ Import impossible : l'espace de stockage est peut-être plein.")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="card">
+      <h2>Sauvegarde complète</h2>
+      <p className="hint">
+        Un seul fichier avec vos {ticketCount} ticket(s) et votre dictionnaire appris, pour changer
+        d'appareil ou vous protéger d'une perte de données. La clé API n'y figure jamais. À
+        l'import, les tickets déjà présents ne sont pas écrasés ; les anciens exports JSON des
+        tickets sont acceptés.
+      </p>
+      <div className="btn-row">
+        <button className="btn primary" onClick={doExport} disabled={busy}>
+          💾 Sauvegarder (.json)
+        </button>
+        <button className="btn" onClick={() => fileRef.current?.click()} disabled={busy}>
+          ⬆️ Restaurer (.json)
+        </button>
+      </div>
+      <input ref={fileRef} type="file" accept="application/json,.json" onChange={onImport} style={{ display: 'none' }} />
+      {status && <p className="inline-note">{status}</p>}
+    </div>
+  )
+}
 
 // Sauvegarde / transfert du dictionnaire appris (corrections locales).
 function LearnedManager() {
@@ -95,8 +158,9 @@ function LearnedManager() {
   )
 }
 
-export default function History({ tickets, onDelete, onEdit, onUpdateTicket }) {
+export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onReload }) {
   const [query, setQuery] = useState('')
+  const [backupStatus, setBackupStatus] = useState('')
   const [openId, setOpenId] = useState(null)
   const [selected, setSelected] = useState([]) // ids cochés pour comparaison (max 2)
   const [comparing, setComparing] = useState(false)
@@ -135,6 +199,7 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket }) {
             Excel / CSV / JSON.
           </Empty>
         </div>
+        <BackupManager ticketCount={0} onReload={onReload} status={backupStatus} setStatus={setBackupStatus} />
         <LearnedManager />
       </div>
     )
@@ -294,6 +359,7 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket }) {
         })}
       </div>
 
+      <BackupManager ticketCount={tickets.length} onReload={onReload} status={backupStatus} setStatus={setBackupStatus} />
       <LearnedManager />
 
       {comparing && pair.length === 2 && (

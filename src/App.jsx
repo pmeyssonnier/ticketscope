@@ -138,7 +138,13 @@ export default function App() {
             <Dashboard tickets={tickets} />
           </Suspense>
         ) : (
-          <History tickets={tickets} onDelete={handleDelete} onEdit={handleEdit} onUpdateTicket={handleUpdateTicket} />
+          <History
+            tickets={tickets}
+            onDelete={handleDelete}
+            onEdit={handleEdit}
+            onUpdateTicket={handleUpdateTicket}
+            onReload={async () => setTickets(await loadTickets())}
+          />
         )}
       </main>
 
