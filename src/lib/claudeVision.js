@@ -8,7 +8,7 @@
 // local (Tesseract) reste l'option par défaut, 100 % hors-ligne.
 
 import { COICOP_LABELS, coicopLabel } from '../data/coicop.js'
-import { uid } from './format.js'
+import { uid, normalizeStr, titleFromRaw } from './format.js'
 import { parseFormat } from './units.js'
 import { computeNeedsReview } from './review.js'
 
@@ -271,6 +271,27 @@ export function withPromotionLines(items, promotions) {
   return out
 }
 
+// Le type d'article d'une promotion de lot (« Boxers 3 x 19,99EUR » → « Boxer »)
+// ne vaut que pour les articles qu'elle vise. Le modèle l'étend parfois à tous les
+// articles du ticket : on le remet sur les articles visés et on rend aux autres
+// leur nom de modèle. Sans rattachement fiable (plus d'articles visés que le « N x »
+// du libellé), on ne touche à rien.
+export function namePromotedItems(items, promotions) {
+  const out = items.map((it) => ({ ...it }))
+  for (const promo of Array.isArray(promotions) ? promotions : []) {
+    const m = /^\s*([A-Za-zÀ-ÿ'-]{3,}?)s?\s+(\d+)\s*[x×]/i.exec(promo?.label || '')
+    if (!m) continue
+    const type = m[1][0].toUpperCase() + m[1].slice(1).toLowerCase()
+    const linked = new Set((promo.item_numbers || []).map((n) => Number(n) - 1).filter((i) => out[i]))
+    if (!linked.size || linked.size > Number(m[2])) continue
+    out.forEach((it, i) => {
+      if (linked.has(i)) it.normalized = type
+      else if (normalizeStr(it.normalized) === normalizeStr(type)) it.normalized = titleFromRaw(it.raw) || it.raw
+    })
+  }
+  return out
+}
+
 export function toDraft(parsed) {
   const items = (parsed.items || []).map((it) => {
     const coicop = it.coicop || null
@@ -308,7 +329,7 @@ export function toDraft(parsed) {
     engine: 'ia',
     store: parsed.store || 'Magasin inconnu',
     date: parsed.date || null,
-    items: withPromotionLines(items, parsed.promotions),
+    items: withPromotionLines(namePromotedItems(items, parsed.promotions), parsed.promotions),
     globalDiscountTotal: 0,
     subtotalDeclared: null,
     totalDeclared: parsed.total_paid != null ? +Number(parsed.total_paid).toFixed(2) : null,

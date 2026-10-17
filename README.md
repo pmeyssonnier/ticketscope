@@ -278,6 +278,9 @@ par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.9.3** — mode IA : le type d'article d'une promotion de lot (« Boxers 3 x … ») n'est
+  appliqué qu'aux articles visés ; les autres reprennent leur nom de modèle, même si
+  le modèle a étendu « Boxer » à tout le ticket.
 - **2.9.2** — mode IA : consigne corrigée pour ne plus nommer tous les articles d'après
   une promotion de lot (« Boxers 3 x 19,99EUR ») ni recopier son prix sur un article.
 - **2.9.1** — la feuille *Synthèse COICOP* de l'export Excel est regroupée **par code**
