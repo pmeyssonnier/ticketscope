@@ -2,7 +2,7 @@
 // un code COICOP et un niveau de confiance, à partir de la base de connaissances
 // (dictionnaire intégré + entrées apprises via les corrections utilisateur).
 
-import { normalizeStr, titleFromRaw } from './format.js'
+import { normalizeStr, titleFromRaw, hasWord } from './format.js'
 import { suggestClassification } from './suggest.js'
 import { PRODUCT_DICTIONARY } from '../data/dictionary.js'
 import { coicopLabel } from '../data/coicop.js'
@@ -12,6 +12,8 @@ export const REVIEW_THRESHOLD = 0.75
 // confirmer »), au-dessus d'un produit inconnu (0,25).
 export const RULE_CONFIDENCE = 0.6
 export const RULE_CONFIDENCE_GENERIC = 0.5
+// Score maximal d'un appariement approximatif (voir scoreEntry) : au-delà, exact.
+const FUZZY_MAX_SCORE = 0.72
 
 // Distance d'édition (Levenshtein) bornée à `max` — pour tolérer les fautes OCR.
 function editUpTo(a, b, max) {
@@ -50,7 +52,7 @@ function fuzzyWord(tokens, word) {
 
 // Retourne 'exact', 'fuzzy' ou null pour un mot-clé (mono ou multi-mots).
 function keywordMatch(norm, tokens, k) {
-  if (norm.includes(k)) return 'exact'
+  if (hasWord(norm, k)) return 'exact'
   const words = k.split(' ').filter(Boolean)
   if (words.length && words.every((w) => fuzzyWord(tokens, w))) return 'fuzzy'
   return null
@@ -73,14 +75,14 @@ function scoreEntry(norm, entry) {
     } else {
       // Appariement approximatif (faute OCR probable) : reconnu mais confiance
       // maintenue sous le seuil de révision -> proposé « à confirmer ».
-      best = Math.max(best, Math.min(0.6 + 0.1 * specificity, 0.72))
+      best = Math.max(best, Math.min(0.6 + 0.1 * specificity, FUZZY_MAX_SCORE))
     }
   }
   if (best === 0) return 0
   if (entry.mustAll) {
     const ok = entry.mustAll.every((m) => {
       const mm = normalizeStr(m)
-      return norm.includes(mm) || fuzzyWord(tokens, mm)
+      return hasWord(norm, mm) || fuzzyWord(tokens, mm)
     })
     if (!ok) return 0
   }
@@ -91,11 +93,20 @@ function scoreEntry(norm, entry) {
 export function classifyItem(item, learned = []) {
   const norm = normalizeStr(item.raw)
 
-  // 1) Correspondance apprise (correction utilisateur) -> confiance maximale.
+  // 1) Correspondance apprise (correction utilisateur). Exacte : confiance maximale.
+  //    Approximative (faute OCR probable) : proposée « à confirmer », comme au
+  //    dictionnaire — jamais 0,99. Une correspondance exacte l'emporte sur une floue.
+  let learnedEntry = null
+  let learnedScore = 0
   for (const entry of learned) {
-    if (scoreEntry(norm, entry) > 0) {
-      return decorate(item, entry, 0.99, 'appris')
+    const s = scoreEntry(norm, entry)
+    if (s > learnedScore) {
+      learnedScore = s
+      learnedEntry = entry
     }
+  }
+  if (learnedEntry) {
+    return decorate(item, learnedEntry, learnedScore > FUZZY_MAX_SCORE ? 0.99 : learnedScore, 'appris')
   }
 
   // 2) Dictionnaire intégré : meilleure entrée par score.

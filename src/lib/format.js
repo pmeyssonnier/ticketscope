@@ -13,12 +13,27 @@ export function normalizeStr(s) {
 }
 
 // Parse un montant "25,60" ou "-51.20" ou "1 234,56 €" -> Number (ou null).
+// Montant « 12,50 », « -3.98 », « 3,98- », « 1 234,56 € » → nombre. Toute valeur
+// malformée (« 12,5abc », « 12-34 », « 1,2,3 ») donne null plutôt qu'un chiffre
+// approximatif.
+// Le mot-clé `k` (déjà normalisé) figure-t-il dans `norm` (idem) comme mot entier ?
+// Début de mot obligatoire, fin de mot tolérant le pluriel (« pomme » ~ « pommes »),
+// mais pas une sous-chaîne interne (« lait » n'est pas dans « laitue », « pain » pas
+// dans « epinards »). Fonctionne aussi pour les mots-clés de plusieurs mots.
+export function hasWord(norm, k) {
+  if (!norm || !k) return false
+  const esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(^| )${esc}(s|x|es)?( |$)`).test(norm)
+}
+
 export function parseAmount(s) {
   if (s == null) return null
-  let t = s.toString().trim().replace(/[€\s]/g, '')
-  if (!t) return null
-  const neg = /^-/.test(t) || /-$/.test(t)
-  t = t.replace(/-/g, '')
+  const t0 = s.toString().trim().replace(/[€\s]/g, '')
+  if (!t0) return null
+  const m = /^(-)?([^-]*?)(-)?$/.exec(t0)
+  if (!m || (m[1] && m[3])) return null
+  const neg = Boolean(m[1] || m[3])
+  let t = m[2]
   // Si virgule et point présents, le dernier est le séparateur décimal.
   if (t.includes(',') && t.includes('.')) {
     if (t.lastIndexOf(',') > t.lastIndexOf('.')) t = t.replace(/\./g, '').replace(',', '.')
@@ -26,8 +41,8 @@ export function parseAmount(s) {
   } else {
     t = t.replace(',', '.')
   }
-  const n = parseFloat(t)
-  if (Number.isNaN(n)) return null
+  if (!/^(\d+(\.\d+)?|\.\d+)$/.test(t)) return null
+  const n = Number(t)
   return neg ? -n : n
 }
 

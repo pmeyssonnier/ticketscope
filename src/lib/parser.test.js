@@ -44,6 +44,14 @@ describe('parseAmount', () => {
     expect(parseAmount('1 234,56 €')).toBeCloseTo(1234.56)
     expect(parseAmount('6.35')).toBeCloseTo(6.35)
     expect(parseAmount('')).toBeNull()
+    expect(parseAmount('3,98-')).toBeCloseTo(-3.98)
+    expect(parseAmount('.5')).toBeCloseTo(0.5)
+  })
+
+  it('rejette les valeurs malformées au lieu de les arrondir', () => {
+    for (const bad of ['12,5abc', 'abc', '12-34', '--3', '-3-', '1,2,3', '1.2.3', '12,', '€', '4 x 5']) {
+      expect(parseAmount(bad), bad).toBeNull()
+    }
   })
 })
 
