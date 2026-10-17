@@ -140,4 +140,12 @@ describe('deux confiances : lecture et classement', () => {
     expect(prompt).toContain('"class_confidence"')
     expect(prompt).not.toContain('"confidence" entre 0 et 1')
   })
+
+  it('le prompt n\'amorce pas un type d\'article et interdit de recopier le prix d\'un lot', () => {
+    const p = buildPrompt()
+    expect(p).not.toMatch(/boxer, chemise/i)
+    expect(p).toMatch(/item_numbers/)
+    expect(p).toMatch(/sous-vêtements.*03\.1\.2/)
+    expect(p).toMatch(/jamais d'un autre prix/i)
+  })
 })
