@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { formatEUR, formatDate, normalizeStr } from '../lib/format.js'
 import { exportCSV, exportJSON, exportXLSX, download } from '../lib/exporters.js'
-import { currentBackup, backupFilename, importBackup, describeImport } from '../lib/backup.js'
+import { currentBackup, backupFilename, planImport, applyImport, describePlan, describeImport } from '../lib/backup.js'
 import { loadLearned, exportLearnedData, mergeLearned, clearLearned } from '../lib/storage.js'
 import { ticketEngine, engineLabel } from '../lib/compare.js'
 import Compare from './Compare.jsx'
@@ -11,6 +11,7 @@ import { ConfidenceBadge, Empty } from './ui.jsx'
 // `status` vit dans History : l'écran change de structure (vide -> liste) pendant l'import.
 function BackupManager({ ticketCount, onReload, status, setStatus }) {
   const [busy, setBusy] = useState(false)
+  const [plan, setPlan] = useState(null) // aperçu d'import en attente de confirmation
   const fileRef = useRef(null)
 
   async function doExport() {
@@ -28,19 +29,43 @@ function BackupManager({ ticketCount, onReload, status, setStatus }) {
     }
   }
 
+  // Étape 1 : lecture et validation du fichier, sans rien écrire.
   async function onImport(e) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
     setBusy(true)
+    setPlan(null)
     try {
       const data = JSON.parse(await file.text())
-      const result = await importBackup(data)
-      setStatus(describeImport(result))
-      if (!result.invalid) await onReload()
+      const next = await planImport(data)
+      if (next.invalid) setStatus(describePlan(next))
+      else {
+        setStatus('')
+        setPlan(next)
+      }
     } catch (err) {
       console.error(err)
-      setStatus(err instanceof SyntaxError ? '❌ Fichier illisible (JSON invalide).' : "❌ Import impossible : l'espace de stockage est peut-être plein.")
+      setStatus(err instanceof SyntaxError ? '❌ Fichier illisible (JSON invalide).' : '❌ Lecture du fichier impossible.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Étape 2 : écriture, seulement après confirmation.
+  async function confirmImport() {
+    if (!plan) return
+    setBusy(true)
+    try {
+      const result = await applyImport(plan)
+      setPlan(null)
+      setStatus(describeImport(result))
+      await onReload()
+    } catch (err) {
+      console.error(err)
+      setStatus("❌ Import interrompu : l'espace de stockage est peut-être plein. Les tickets déjà écrits sont conservés.")
+      setPlan(null)
+      await onReload()
     } finally {
       setBusy(false)
     }
@@ -64,6 +89,40 @@ function BackupManager({ ticketCount, onReload, status, setStatus }) {
         </button>
       </div>
       <input ref={fileRef} type="file" accept="application/json,.json" onChange={onImport} style={{ display: 'none' }} />
+      {plan && (
+        <div className="inline-note" role="status">
+          <b>Aperçu de l'import</b> — {describePlan(plan)}
+          {plan.rejected.length > 0 && (
+            <ul>
+              {plan.rejected.slice(0, 6).map((r) => (
+                <li key={r.label}>
+                  ❌ Ticket {r.label} rejeté : {r.reasons.join(' ; ')}
+                </li>
+              ))}
+              {plan.rejected.length > 6 && <li>… et {plan.rejected.length - 6} autre(s) ticket(s) rejeté(s).</li>}
+            </ul>
+          )}
+          {plan.warnings.length > 0 && (
+            <ul>
+              {plan.warnings.slice(0, 4).map((w) => (
+                <li key={w.label}>
+                  ⚠️ Ticket {w.label} à relire : {w.notes.join(' ; ')}
+                </li>
+              ))}
+              {plan.warnings.length > 4 && <li>… et {plan.warnings.length - 4} autre(s) ticket(s) à relire.</li>}
+            </ul>
+          )}
+          {plan.rejected.length > 0 && <p>Les éléments rejetés ne seront pas importés.</p>}
+          <div className="btn-row">
+            <button className="btn primary" onClick={confirmImport} disabled={busy || (!plan.toAdd.length && !plan.learned.length)}>
+              ✓ Confirmer l'import
+            </button>
+            <button className="btn" onClick={() => setPlan(null)} disabled={busy}>
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
       {status && <p className="inline-note">{status}</p>}
     </div>
   )

@@ -83,31 +83,126 @@ describe('formats acceptés', () => {
   })
 })
 
-describe('validation des tickets importés', () => {
-  it('ignore les éléments invalides et force les nombres', async () => {
+describe('validation stricte (audit P1)', () => {
+  const entry = (extra = {}) => item({ id: 'i1', ...extra })
+
+  it('planImport n\'écrit rien', async () => {
     const d = await device()
-    const bad = [null, 'x', { id: 'a' }, { id: 'b', items: 'pas un tableau' }]
-    const messy = ticket('t9', '2024-03-12T10:00:00Z', { items: [item({ quantity: '2', unitPrice: '1,5', net: 'abc' })] })
-    const r = await d.backup.importBackup({ type: 'backup', tickets: [...bad, messy] })
-    expect(r).toMatchObject({ ticketsAdded: 1, ticketsInvalid: 4 })
-    const [saved] = await d.tickets.loadTickets()
-    expect(saved.items[0]).toMatchObject({ quantity: 2, unitPrice: 0, net: 0 })
-    expect(typeof saved.items[0].unitPrice).toBe('number')
+    const plan = await d.backup.planImport({ type: 'backup', tickets: [ticket('t1', '2024-03-12T10:00:00Z')], learned: [{ normalized: 'G', coicop: '01.1.8', keywords: ['gaufre'] }] })
+    expect(plan.toAdd).toHaveLength(1)
+    expect(await d.tickets.loadTickets()).toEqual([])
+    expect(d.storage.loadLearned()).toEqual([])
+    await d.backup.applyImport(plan)
+    expect(await d.tickets.loadTickets()).toHaveLength(1)
   })
 
-  it('attribue un id, une date de création et des valeurs par défaut', async () => {
+  it('rejette les valeurs impossibles au lieu de les remplacer par 0', async () => {
     const d = await device()
-    await d.backup.importBackup([{ items: [] }])
-    const [t] = await d.tickets.loadTickets()
-    expect(t.id).toMatch(/^tk_/)
-    expect(t.createdAt).toBeTruthy()
-    expect(t).toMatchObject({ store: '', date: null })
+    const bad = [
+      ticket('a', '2024-03-12T10:00:00Z', { items: [entry({ quantity: '2' })] }), // nombre en texte
+      ticket('b', '2024-03-12T10:00:00Z', { items: [entry({ net: null })] }),
+      ticket('c', '2024-03-12T10:00:00Z', { items: [entry({ unitPrice: Number.NaN })] }),
+      ticket('d', '2024-03-12T10:00:00Z', { items: [entry({ quantity: -1 })] }),
+      ticket('e', '2024-03-12T10:00:00Z', { items: [entry({ confidence: 3 })] }),
+      ticket('f', '2024-03-12T10:00:00Z', { date: '2024-02-31' }),
+      ticket('g', 'pas une date'),
+      ticket('h', '2024-03-12T10:00:00Z', { items: 'pas un tableau' }),
+      ticket('', '2024-03-12T10:00:00Z'),
+      { items: [] }, // sans id
+      null,
+      'texte',
+    ]
+    const plan = await d.backup.planImport({ type: 'backup', tickets: bad })
+    expect(plan.toAdd).toHaveLength(0)
+    expect(plan.rejected).toHaveLength(bad.length)
+    const reasons = plan.rejected.map((r) => r.reasons.join(' '))
+    expect(reasons[0]).toMatch(/quantity invalide/)
+    expect(reasons[1]).toMatch(/net invalide/)
+    expect(reasons[3]).toMatch(/quantité négative/)
+    expect(reasons[4]).toMatch(/confiance/)
+    expect(reasons[5]).toMatch(/date invalide/)
+    expect(reasons[6]).toMatch(/création invalide/)
+    expect(reasons[8]).toMatch(/identifiant manquant/)
+    const res = await d.backup.importBackup({ type: 'backup', tickets: bad })
+    expect(res).toMatchObject({ ticketsAdded: 0, ticketsInvalid: bad.length })
+    expect(await d.tickets.loadTickets()).toEqual([])
   })
 
-  it('décrit le résultat', async () => {
+  it('accepte un ticket à relire (calcul incohérent) avec un avertissement', async () => {
     const d = await device()
-    const r = await d.backup.importBackup({ type: 'backup', tickets: [ticket('t1', '2024-03-12T10:00:00Z'), { x: 1 }], learned: [] })
-    expect(d.backup.describeImport(r)).toBe('✓ Import terminé : 1 ticket(s) ajouté(s), 1 ignoré(s) (format invalide).')
+    const t = ticket('t1', '2024-03-12T10:00:00Z', { items: [entry({ gross: 9, net: 1 })] })
+    const plan = await d.backup.planImport([t])
+    expect(plan.toAdd).toHaveLength(1)
+    expect(plan.warnings[0].notes.join(' ')).toMatch(/brut ≠ quantité × prix unitaire/)
+    expect(plan.warnings[0].notes.join(' ')).toMatch(/net ≠ brut \+ remise/)
+  })
+
+  it('signale une date de création absente et la remplace par l\'import', async () => {
+    const d = await device()
+    const { createdAt, ...noDate } = ticket('t1', 'x') // eslint-disable-line no-unused-vars
+    const plan = await d.backup.planImport([noDate])
+    expect(plan.toAdd[0].createdAt).toBeTruthy()
+    expect(plan.warnings[0].notes.join(' ')).toMatch(/date de création absente/)
+  })
+
+  it('ne conserve que les champs connus (liste blanche)', async () => {
+    const d = await device()
+    const t = JSON.parse('{"id":"t1","createdAt":"2024-03-12T10:00:00Z","store":"S","items":[{"id":"i","quantity":1,"unitPrice":1,"gross":1,"discount":0,"net":1,"evil":"x","__proto__":{"polluted":true}}],"__proto__":{"polluted":true},"extra":{"a":1}}')
+    const plan = await d.backup.planImport([t])
+    const out = plan.toAdd[0]
+    expect(Object.keys(out).sort()).toEqual(['createdAt', 'date', 'id', 'items', 'store'])
+    expect(Object.keys(out.items[0]).sort()).toEqual(['coicop', 'discount', 'gross', 'id', 'net', 'quantity', 'unitPrice'])
+    expect({}.polluted).toBeUndefined()
+  })
+
+  it('un identifiant en double dans le fichier n\'est importé qu\'une fois', async () => {
+    const d = await device()
+    const plan = await d.backup.planImport([ticket('t1', '2024-03-12T10:00:00Z'), ticket('t1', '2024-03-12T10:00:00Z')])
+    expect(plan.toAdd).toHaveLength(1)
+    expect(plan.present).toHaveLength(1)
+  })
+
+  it('refuse un fichier trop volumineux', async () => {
+    const d = await device()
+    const many = Array.from({ length: d.backup.LIMITS.tickets + 1 }, (_, i) => ticket(`t${i}`, '2024-03-12T10:00:00Z'))
+    const plan = await d.backup.planImport(many)
+    expect(plan.invalid).toBe(true)
+    expect(d.backup.describePlan(plan)).toMatch(/trop de tickets/)
+    const tooManyItems = ticket('big', '2024-03-12T10:00:00Z', { items: Array.from({ length: d.backup.LIMITS.itemsPerTicket + 1 }, () => entry()) })
+    expect((await d.backup.planImport([tooManyItems])).rejected[0].reasons.join(' ')).toMatch(/trop de lignes/)
+  })
+
+  it('valide les entrées du dictionnaire', async () => {
+    const d = await device()
+    const plan = await d.backup.planImport({ type: 'learned-dictionary', entries: [
+      { normalized: 'ok', coicop: '01.1.8', keywords: ['gaufre'] },
+      { normalized: 'sans coicop', keywords: ['x'] },
+      { normalized: 'mots-clés invalides', coicop: '01.1.8', keywords: [1, 2] },
+      { normalized: 'vide', coicop: '01.1.8', keywords: [] },
+    ] })
+    expect(plan.learned).toHaveLength(1)
+    expect(plan.learnedRejected).toBe(3)
+  })
+
+  it('décrit le plan et le résultat', async () => {
+    const d = await device()
+    const plan = await d.backup.planImport({ type: 'backup', tickets: [ticket('t1', '2024-03-12T10:00:00Z'), { x: 1 }], learned: [] })
+    expect(d.backup.describePlan(plan)).toBe('1 ticket à ajouter · 1 rejeté(s)')
+    const r = await d.backup.applyImport(plan)
+    expect(d.backup.describeImport(r)).toBe('✓ Import terminé : 1 ticket(s) ajouté(s), 1 rejeté(s).')
+  })
+
+  it('les tickets réellement enregistrés par l\'application sont acceptés tels quels', async () => {
+    const d = await device()
+    const real = {
+      id: 'tk_abc', createdAt: '2026-10-17T13:00:00.000Z', engine: 'ia', store: 'Celio', date: '2026-10-17',
+      items: [{ id: 'it_1', raw: 'NIWOBIBOUP', normalized: 'Boxer', brand: '', format: '', quantity: 1, unitPrice: 7.99, gross: 7.99, discount: 0, net: 7.99, coicop: '03.1.2', coicopLabel: 'Vêtements', category: 'Vêtements', confidence: 0.9, source: 'ia', needsReview: false }],
+      globalDiscountTotal: 0, subtotalDeclared: null, totalDeclared: 7.99, totalNet: 7.99,
+    }
+    const plan = await d.backup.planImport([real])
+    expect(plan.rejected).toEqual([])
+    expect(plan.warnings).toEqual([])
+    expect(plan.toAdd[0]).toEqual(real)
   })
 })
 
