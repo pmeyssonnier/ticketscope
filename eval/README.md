@@ -3,7 +3,9 @@
 `npm run eval` mesure ce que le pipeline **local** de TicketScope (texte → lignes →
 COICOP) fait d'un ticket, sur un jeu de tickets annotés (`dataset.json`), avec ou
 sans bruit OCR. `npm test` rejoue les mêmes mesures avec des seuils (« cliquet ») :
-une baisse fait échouer le test. Après une amélioration, **remontez les seuils** de
+une baisse fait échouer le test. Depuis le repli par règles, la tranche « < 75 % »
+est souvent juste sans bruit (≈ 92 %) : elle reste signalée « à confirmer » et ne
+devient peu fiable qu'avec du bruit OCR (≈ 53 % à 6 %). Après une amélioration, **remontez les seuils** de
 `eval.test.js`.
 
 ## Indicateurs

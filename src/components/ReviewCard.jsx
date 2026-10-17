@@ -87,6 +87,7 @@ export default function ReviewCard({ it, onUpdate, onCorrect, onSuggest, onRemov
       <footer className="rcard-foot">
         {it.readConfidence != null && <ConfidenceBadge kind="read" value={it.readConfidence} />}
         <ConfidenceBadge kind="class" value={it.confidence} />
+        {it.source === 'regle' && <span className="muted" title="Proposé par une règle générique, à confirmer">💡 par règle</span>}
         {readDoubtful && (
           <button type="button" className="link-btn" onClick={() => onConfirmRead(it.id)}>
             ✓ Lecture vérifiée

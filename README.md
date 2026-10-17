@@ -238,11 +238,11 @@ pipeline **local** fait d'un texte de ticket, avec 0 / 3 / 6 % de bruit de type
 OCR : lignes retrouvées, montants exacts, bon code COICOP, couverture, erreurs
 signalées « à confirmer » et **calibration de la confiance**. `npm test` rejoue ces
 mesures avec des seuils (« cliquet ») : une régression fait échouer les tests.
-Premières mesures : lignes et montants retrouvés à 100 % (jusqu'à 6 % de bruit) ;
-sur le ticket d'exemple, 96 % d'accord avec les codes de l'IA ; **les codes à
-confiance haute sont justes à 96 %, ceux à confiance basse à 8 %**. Le dictionnaire
-local reste centré sur le ticket d'exemple : il ne classe aucune des lignes d'un
-ticket d'habillement synthétique et 13 % d'un ticket de courses synthétique. Les
+Mesures : lignes et montants retrouvés à 100 % (jusqu'à 6 % de bruit) ;
+sur le ticket d'exemple, 96 % d'accord avec les codes de l'IA. Avant le **repli par
+règles**, le dictionnaire local ne classait aucune ligne d'un ticket d'habillement
+synthétique et 13 % d'un ticket de courses synthétique ; avec le repli, la
+couverture passe à 100 % et 93 % (98 % au global) pour 94 % de bons codes. Les
 codes de référence du ticket d'exemple viennent de l'IA et **ne sont pas validés
 par un humain** (voir `eval/README.md`).
 
@@ -278,6 +278,11 @@ par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.9** — **repli par règles** pour le classement local : un produit absent du
+  dictionnaire est classé par les règles génériques (vêtements, chaussures,
+  alimentation…), toujours « à confirmer » (confiance 60 % ou 50 %, mention
+  « 💡 par règle ») ; le dictionnaire et les corrections apprises restent
+  prioritaires.
 - **2.8** — écran de correction en **fiches sur téléphone** avec barre d'écart
   collante ; **confiance de lecture** séparée de la confiance de classement
   (OCR, IA, export, sauvegarde) ; **suivi de précision** sur un jeu annoté

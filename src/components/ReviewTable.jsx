@@ -325,6 +325,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
                   <div style={{ display: 'grid', gap: 4, justifyItems: 'start' }}>
                     {it.readConfidence != null && <ConfidenceBadge kind="read" value={it.readConfidence} />}
                     <ConfidenceBadge kind="class" value={it.confidence} />
+                    {it.source === 'regle' && <span className="muted" title="Proposé par une règle générique, à confirmer">💡 par règle</span>}
                     {it.readConfidence != null && it.readConfidence < 0.75 && (
                       <button type="button" className="link-btn" onClick={() => confirmRead(it.id)}>
                         ✓ Lecture vérifiée
