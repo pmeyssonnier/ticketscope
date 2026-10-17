@@ -111,3 +111,33 @@ describe('plusieurs promotions : l\'invariant du prompt tient', () => {
     expect(d.items).toHaveLength(1)
   })
 })
+
+describe('deux confiances : lecture et classement', () => {
+  const base = { raw: 'LAIT', product: 'Lait', quantity: 1, unit_price: 1, discount: 0, net: 1, coicop: '01.1.4' }
+  it('read_confidence et class_confidence sont conservées séparément', () => {
+    const d = toDraft({ store: '', date: '', total_paid: 1, promotions: [], items: [{ ...base, read_confidence: 0.4, class_confidence: 0.95 }] })
+    expect(d.items[0]).toMatchObject({ confidence: 0.95, readConfidence: 0.4, needsReview: true }) // lecture douteuse
+  })
+  it('classement douteux, lecture sûre : à confirmer aussi', () => {
+    const d = toDraft({ store: '', date: '', total_paid: 1, promotions: [], items: [{ ...base, read_confidence: 0.95, class_confidence: 0.5 }] })
+    expect(d.items[0]).toMatchObject({ confidence: 0.5, readConfidence: 0.95, needsReview: true })
+  })
+  it('les deux sûres : rien à confirmer', () => {
+    const d = toDraft({ store: '', date: '', total_paid: 1, promotions: [], items: [{ ...base, read_confidence: 0.9, class_confidence: 0.9 }] })
+    expect(d.items[0].needsReview).toBe(false)
+  })
+  it('ancienne réponse (une seule « confidence ») : reste acceptée', () => {
+    const d = toDraft({ store: '', date: '', total_paid: 1, promotions: [], items: [{ ...base, confidence: 0.9 }] })
+    expect(d.items[0]).toMatchObject({ confidence: 0.9, readConfidence: null, needsReview: false })
+  })
+  it('valeurs hors bornes ramenées dans [0 ; 1]', () => {
+    const d = toDraft({ store: '', date: '', total_paid: 1, promotions: [], items: [{ ...base, read_confidence: 7, class_confidence: -2 }] })
+    expect(d.items[0]).toMatchObject({ readConfidence: 1, confidence: 0 })
+  })
+  it('le schéma et la consigne exposent les deux scores', () => {
+    const prompt = buildPrompt()
+    expect(prompt).toContain('"read_confidence"')
+    expect(prompt).toContain('"class_confidence"')
+    expect(prompt).not.toContain('"confidence" entre 0 et 1')
+  })
+})

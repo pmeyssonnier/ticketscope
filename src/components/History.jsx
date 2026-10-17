@@ -415,7 +415,8 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onR
                           </td>
                           <td>{it.category}</td>
                           <td>
-                            <ConfidenceBadge value={it.confidence} />
+                            {it.readConfidence != null && <ConfidenceBadge kind="read" value={it.readConfidence} />}{' '}
+                            <ConfidenceBadge kind="class" value={it.confidence} />
                           </td>
                         </tr>
                       ))}

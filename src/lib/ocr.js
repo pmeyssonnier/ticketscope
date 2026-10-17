@@ -80,7 +80,11 @@ async function ocrImageLike(source, onProgress, opts = {}) {
   }
   const worker = await getWorker(makeLogger(onProgress))
   const { data } = await worker.recognize(input)
-  return data.text || ''
+  // Confiance par ligne (0-100) : sert à la confiance de lecture (readConfidence.js).
+  const lines = (data.lines || [])
+    .map((l) => ({ text: String(l.text || '').trim(), confidence: Number(l.confidence) }))
+    .filter((l) => l.text)
+  return { text: data.text || '', lines }
 }
 
 // --- PDF ---
@@ -137,11 +141,12 @@ async function extractPdf(file, onProgress, opts = {}) {
   const meaningful = embedded.replace(/\s/g, '').length
 
   if (meaningful >= 40) {
-    return embedded
+    return { text: embedded, lines: [] } // texte numérique exact : pas d'OCR, pas de score
   }
 
   // 2) PDF scanné : rendu image + OCR page par page.
   const ocrTexts = []
+  const ocrLines = []
   for (let p = 1; p <= pdf.numPages; p += 1) {
     const page = await pdf.getPage(p)
     const viewport = page.getViewport({ scale: 2 })
@@ -151,9 +156,11 @@ async function extractPdf(file, onProgress, opts = {}) {
     const ctx = canvas.getContext('2d')
     await page.render({ canvasContext: ctx, viewport }).promise
     onProgress?.({ label: `OCR du PDF scanné (page ${p}/${pdf.numPages})…`, progress: (p - 1) / pdf.numPages })
-    ocrTexts.push(await ocrImageLike(canvas, onProgress, opts))
+    const page_ = await ocrImageLike(canvas, onProgress, opts)
+    ocrTexts.push(page_.text)
+    ocrLines.push(...page_.lines)
   }
-  return ocrTexts.join('\n')
+  return { text: ocrTexts.join('\n'), lines: ocrLines }
 }
 
 // Point d'entrée unique : accepte une image ou un PDF, renvoie le texte.
@@ -162,30 +169,33 @@ export async function extractText(file, onProgress, opts = {}) {
   const type = file.type || ''
   const name = (file.name || '').toLowerCase()
   if (type === 'application/pdf' || name.endsWith('.pdf')) {
-    return { text: await extractPdf(file, onProgress, opts), kind: 'pdf' }
+    const pdf = await extractPdf(file, onProgress, opts)
+    return { text: pdf.text, lines: pdf.lines, kind: 'pdf' }
   }
   if (type.startsWith('image/') || /\.(png|jpe?g|webp|bmp|gif|tiff?)$/.test(name)) {
-    const text = await ocrImageLike(file, onProgress, opts)
-    return { text, kind: 'image' }
+    const { text, lines } = await ocrImageLike(file, onProgress, opts)
+    return { text, lines, kind: 'image' }
   }
   // Repli : lecture texte brute.
   const text = await file.text()
-  return { text, kind: 'text' }
+  return { text, lines: [], kind: 'text' }
 }
 
 // Plusieurs photos d'un même (long) ticket : OCR de chaque tranche puis
 // recollage (les tranches doivent se suivre du haut vers le bas).
 export async function extractTextMulti(files, onProgress, opts = {}) {
   const texts = []
+  const lines = []
   for (let i = 0; i < files.length; i += 1) {
     const n = `Photo ${i + 1}/${files.length}`
     // eslint-disable-next-line no-await-in-loop
-    const { text } = await extractText(
+    const res = await extractText(
       files[i],
       (p) => onProgress?.({ label: `${n} — ${p.label}`, progress: p.progress }),
       opts,
     )
-    texts.push(text)
+    texts.push(res.text)
+    lines.push(...res.lines)
   }
-  return { text: stitchOcrTexts(texts), kind: 'multi' }
+  return { text: stitchOcrTexts(texts), lines, kind: 'multi' }
 }

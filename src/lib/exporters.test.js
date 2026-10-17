@@ -18,3 +18,11 @@ describe('exporters', () => {
     expect(s[0].net).toBe(1.5)
   })
 })
+
+describe('export : confiance de lecture', () => {
+  it('ajoute la colonne sans changer « confiance » (classement)', () => {
+    const rows = flattenRows([{ id: 't', items: [{ raw: 'A', quantity: 1, net: 1, confidence: 0.9, readConfidence: 0.6 }, { raw: 'B', quantity: 1, net: 1, confidence: 0.8 }] }])
+    expect(rows[0]).toMatchObject({ confiance: 0.9, confiance_lecture: 0.6 })
+    expect(rows[1]).toMatchObject({ confiance: 0.8, confiance_lecture: '' })
+  })
+})

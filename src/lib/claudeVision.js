@@ -10,6 +10,7 @@
 import { COICOP_LABELS, coicopLabel } from '../data/coicop.js'
 import { uid } from './format.js'
 import { parseFormat } from './units.js'
+import { computeNeedsReview } from './review.js'
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const COICOP_CODES = Object.keys(COICOP_LABELS)
@@ -88,7 +89,7 @@ const RECEIPT_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['raw', 'product', 'brand', 'format', 'quantity', 'unit_price', 'discount', 'net', 'coicop', 'category', 'confidence'],
+        required: ['raw', 'product', 'brand', 'format', 'quantity', 'unit_price', 'discount', 'net', 'coicop', 'category', 'read_confidence', 'class_confidence'],
         properties: {
           raw: { type: 'string' },
           product: { type: 'string' },
@@ -100,7 +101,8 @@ const RECEIPT_SCHEMA = {
           net: { type: 'number' },
           coicop: { type: 'string', enum: [...COICOP_CODES, ''] },
           category: { type: 'string' },
-          confidence: { type: 'number' },
+          read_confidence: { type: 'number' }, // lecture : libellé et montants bien lus ?
+          class_confidence: { type: 'number' }, // classement : bon code COICOP ?
         },
       },
     },
@@ -123,7 +125,9 @@ Consignes :
 - Contrôle final : la somme des "net" des "items" PLUS la somme des "amount" des "promotions" doit être égale à "total_paid", à quelques centimes d'arrondi près. Si l'écart est plus grand, relis les prix imprimés plutôt que d'inventer un ajustement.
 - Attribue le code COICOP le plus adapté depuis CETTE liste (n'invente pas d'autre code ; si vraiment inconnu, mets "") et une "category" courte en français :
 ${list}
-- "confidence" entre 0 et 1 : ta certitude sur la lecture ET la classification de la ligne.
+- Deux certitudes distinctes, entre 0 et 1 :
+  - "read_confidence" : ta certitude d'avoir bien LU la ligne (libellé, quantité, prix). Baisse-la si le texte est flou, coupé, ambigu ou si un chiffre est incertain, même si le produit est évident.
+  - "class_confidence" : ta certitude que le code COICOP choisi est le bon pour ce produit, indépendamment de la qualité de lecture.
 - "date" au format AAAA-MM-JJ si lisible, sinon "". "total_paid" = total réellement payé (après remises).
 
 Réponds uniquement via le format JSON demandé.`
@@ -268,12 +272,15 @@ export function withPromotionLines(items, promotions) {
 export function toDraft(parsed) {
   const items = (parsed.items || []).map((it) => {
     const coicop = it.coicop || null
-    const confidence = Math.max(0, Math.min(1, Number(it.confidence) || 0))
+    const clamp01 = (v) => Math.max(0, Math.min(1, Number(v) || 0))
+    // Compatibilité : une ancienne réponse n'a qu'une « confidence » (lecture ET classement).
+    const confidence = clamp01(it.class_confidence ?? it.confidence)
+    const readConfidence = it.read_confidence != null ? clamp01(it.read_confidence) : null
     const quantity = Number(it.quantity) || 1
     const unitPrice = +(Number(it.unit_price) || 0).toFixed(2)
     const discount = +(Number(it.discount) || 0).toFixed(2)
     const gross = +(quantity * unitPrice).toFixed(2)
-    return {
+    const line = {
       id: uid('it'),
       raw: it.raw || it.product || '',
       normalized: it.product || '',
@@ -288,9 +295,10 @@ export function toDraft(parsed) {
       coicopLabel: coicopLabel(coicop),
       category: it.category || (coicop ? '' : 'Inconnu'),
       confidence,
+      readConfidence,
       source: 'ia',
-      needsReview: !coicop || confidence < 0.75 || discount < -gross,
     }
+    return { ...line, needsReview: computeNeedsReview(line) || discount < -gross }
   })
   return {
     id: uid('tk'),
