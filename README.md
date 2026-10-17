@@ -36,10 +36,13 @@ en option, qui envoie l'image du ticket à l'API Anthropic (voir plus bas).
   rejetées), produits, quantités (`4 × 25,60`, `2 x 1,50   3,00`), prix
   unitaires, promotions et remises rattachées à l'article ; les remises du
   récapitulatif ne sont pas comptées deux fois.
-- 🏷️ **Classification COICOP** avec **taux de confiance** et catégorie fine :
-  alimentation et boissons (01-02), **habillement et chaussures (03)** et
-  produits d'entretien (05), à partir d'une base de connaissances produits et
-  de règles de suggestion par mot-clé.
+- 🏷️ **Classification COICOP 2018** avec **taux de confiance** et catégorie fine :
+  alimentation et boissons non alcoolisées (01), alcool et tabac (02),
+  **habillement et chaussures (03)** et produits d'entretien (05). Trois niveaux :
+  **dictionnaire de produits** (et corrections apprises), puis **repli par règles**
+  de mots entiers (code pré-rempli mais toujours « à confirmer »), puis « non
+  classé ». Les codes viennent d'un référentiel officiel versionné (voir
+  *Référentiel COICOP*).
 - 📏 **Format et prix unitaire normalisé** (€/kg, €/L, €/pièce), multipacks
   compris (`6 x 33 cl`).
 - ✏️ **Écran de correction** : produit, quantité, prix, remise, format, code
@@ -56,7 +59,10 @@ en option, qui envoie l'image du ticket à l'API Anthropic (voir plus bas).
   confirmer » si l'une des deux est faible ; modifier la ligne ou toucher
   « Lecture vérifiée » confirme la lecture. Un texte collé ou un PDF numérique n'a
   pas de score de lecture (texte exact).
-- 🔎 **Contrôle de cohérence** : total recalculé vs total payé du ticket.
+- 🔎 **Contrôle de cohérence** : total recalculé vs total payé du ticket. Tous les
+  calculs de montants passent par des **centimes entiers** (pas de bruit de virgule
+  flottante, arrondi commercial au demi-centime) ; un écart d'un centime d'arrondi
+  est toléré, au-delà le ticket reste signalé.
 
 ### Suivi et exports
 - 📊 **Tableaux de bord** : dépenses par division COICOP, par catégorie, par
@@ -67,7 +73,10 @@ en option, qui envoie l'image du ticket à l'API Anthropic (voir plus bas).
   tickets** (par exemple le même ticket lu par l'IA et par l'OCR), avec
   correction directement dans la comparaison.
 - ⬇️ **Exports** Excel (`.xlsx`, feuilles *Lignes* / *Synthèse COICOP* /
-  *Tickets*), CSV et JSON, prêts pour Excel ou Power BI.
+  *Tickets*), CSV et JSON, prêts pour Excel ou Power BI. La synthèse est regroupée
+  **par code COICOP** ; chaque ligne porte le code, son libellé, la colonne
+  `coicop_version` (référentiel utilisé) et `coicop_1999` (équivalent(s) dans
+  l'ancienne nomenclature, séparés par « | »).
 - 💾 **Sauvegarde complète** (tickets + dictionnaire appris, jamais la clé API)
   en un fichier `.json`, à restaurer sur un autre appareil. L'import est **strict
   et en deux temps** : le fichier est d'abord analysé (aperçu avec les anomalies,
@@ -77,7 +86,9 @@ en option, qui envoie l'image du ticket à l'API Anthropic (voir plus bas).
   tickets déjà présents ne sont jamais écrasés ; les anciens exports JSON des
   tickets et l'export du dictionnaire sont acceptés. Un **rappel** s'affiche
   quand aucune sauvegarde n'a été exportée depuis 30 jours (les sauvegardes
-  restent manuelles).
+  restent manuelles). Un code COICOP inconnu du référentiel est conservé mais
+  signalé ; l'ancien code `02.1.2` « Boissons sans alcool » est migré vers `01.2.9`
+  (à confirmer).
 
   ![Sauvegarde complète](docs/06-backup.png)
 - 📱 **PWA** installable sur Android, iPhone, Windows, Mac ; fonctionne hors
@@ -102,6 +113,10 @@ structurée. C'est nettement plus précis sur les photos difficiles.
   ligne négative** dans la liste, avec le code COICOP des articles concernés,
   pour que le total reste exact. Une remise supérieure au prix de la ligne est
   marquée « à confirmer ».
+- **Codes COICOP** : la réponse est contrainte aux classes du référentiel (le
+  schéma JSON les énumère) ; un code qui n'y figure pas devient « non classé »,
+  à relire. Les sous-vêtements sont des vêtements (`03.1.2`), les boissons sans
+  alcool sont en `01.2.x`.
 - **Erreurs** : délai de 90 s, nouvelles tentatives sur 429/529, messages
   explicites (clé invalide, limite de débit, ticket trop long, lecture vide avec
   le détail de la réponse de l'API).
@@ -145,9 +160,10 @@ manuel à saisir :
 4. **Version de Node** : celle de `engines` (24.x). Vercel a abandonné Node 20 ;
    si le build échoue sur ce point, vérifiez aussi *Settings → General → Node.js
    Version*.
-5. **Branche de production** : choisissez la branche à déployer (*Settings →
-   Git → Production Branch*). Chaque push sur une autre branche produit un
-   déploiement de prévisualisation.
+5. **Branche de production** : `main` (*Settings → Git → Production Branch*) ;
+   chaque fusion sur `main` déploie en production, chaque autre branche produit
+   un déploiement de prévisualisation. Le badge de version de l'application
+   (`package.json`) permet de vérifier ce qui est en ligne.
 
 > Le mode ✨ IA est **BYOK** : la clé API reste sur l'appareil de l'utilisateur
 > (aucune variable d'environnement à configurer sur Vercel).
@@ -162,11 +178,15 @@ request, les tests unitaires et le build, ainsi que les tests de bout en bout
 src/
   App.jsx            Navigation, état global (tickets, réglages IA, clé API en mémoire)
   data/
-    coicop.js        Référentiel des codes COICOP (libellés, divisions)
+    coicop.js        Référentiel COICOP 2018 : version, validation, libellés FR, migration
+    coicop2018.js    Structure officielle (264 codes : divisions, groupes, classes ; en + fr)
+    coicop1999.js    COICOP 1999 et paires de correspondance 1999 ↔ 2018 (tableau ONU)
+    coicopCorrespondence.js  from1999() / to1999() : équivalents entre les deux nomenclatures
     dictionary.js    Base de connaissances produits (libellés bruts → COICOP)
     sampleTicket.js  Ticket de démonstration
   lib/
-    format.js        Normalisation de texte, parsing des montants, formats € / dates
+    format.js        Normalisation de texte (hasWord : mots entiers), parsing strict des montants, formats € / dates
+    money.js         Calculs monétaires en centimes entiers (somme, produit, écart, arrondi)
     parser.js        Texte du ticket → enseigne, date, lignes, totaux
     classifier.js    Ligne → produit normalisé + COICOP + confiance (tolérant aux fautes OCR)
     suggest.js       Suggestion COICOP à partir du nom saisi (dictionnaire + règles)
@@ -184,9 +204,9 @@ src/
     useMediaQuery.js Hook : fiches (téléphone) ou tableau (grand écran)
     backup.js        Sauvegarde / restauration : validation stricte, plan d'import, rappel
     saveFlow.js      Enregistrement d'un ticket corrigé : ticket d'abord, apprentissage ensuite
-    exporters.js     Exports Excel / CSV / JSON
+    exporters.js     Exports Excel / CSV / JSON (colonnes coicop_version, coicop_1999)
     xlsxWriter.js    Écriture .xlsx maison (sans dépendance de lecture)
-    *.test.js        Tests unitaires de chaque module
+    *.test.js        Tests unitaires de chaque module (aussi dans data/)
   components/        Interface React (Import, Correction — tableau et fiches —,
                      Tableau de bord, Historique, Comparaison, Réglages)
 e2e/                 Tests de bout en bout (Playwright, téléphone émulé)
@@ -220,16 +240,53 @@ le mode IA produit directement le même brouillon que l'écran de correction.
 
 ![Capture multi-photo d'un long ticket](docs/05-multiphoto.png)
 
-### Base de connaissances & COICOP
+### Base de connaissances & classement
 
-La base produits (`src/data/dictionary.js`) et le référentiel COICOP
-(`src/data/coicop.js`) sont dérivés du jeu de référence
+La base produits (`src/data/dictionary.js`) est dérivée du jeu de référence
 `ticket_proxy_coicop.xlsx`. Chaque entrée relie des **libellés bruts** (souvent
 abrégés sur les tickets) à un **produit normalisé**, une **marque**, un **code
-COICOP** et une **catégorie**. Les corrections de l'utilisateur ajoutent des
-entrées apprises, stockées localement, prioritaires lors des classifications
-suivantes. En mode IA, la liste des codes COICOP du référentiel est imposée au
-modèle (le schéma JSON de la réponse l'énumère).
+COICOP** et une **catégorie**. Le classement local procède par ordre :
+
+1. **corrections apprises** (stockées localement, prioritaires) : exactes à 99 %,
+   approximatives (faute OCR) proposées « à confirmer » ;
+2. **dictionnaire** : correspondance de **mots entiers** (« lait » ne matche pas
+   « laitue »), tolérante aux fautes OCR (alors « à confirmer ») ;
+3. **repli par règles** génériques (`suggest.js` : chemise, café, vin, sauce…) :
+   confiance 60 % ou 50 %, toujours « à confirmer », mention « 💡 par règle » ;
+4. sinon **« non classé »** (25 %), à classer à la main.
+
+En mode IA, la liste des codes du référentiel est imposée au modèle.
+
+### Référentiel COICOP
+
+Nomenclature **COICOP 2018** (celle de l'ECOICOP version 2 que l'IPCH adopte depuis
+janvier 2026), versionnée dans `src/data/` :
+
+| Fichier | Contenu | Source |
+|---|---|---|
+| `coicop2018.js` | 15 divisions, 63 groupes, 186 classes ; titres anglais et français | ONU (`COICOP_2018_English_structure.xlsx`) pour la structure et l'anglais ; Eurostat (`ESTAT:COICOP18` 3.2) pour le français. Les deux concordent sur les 264 codes. |
+| `coicop1999.js` | COICOP 1999 et 286 paires de correspondance avec la 2018 | ONU, tableau de correspondance du 2 octobre 2024 |
+
+L'empreinte SHA-256 de chaque fichier source est consignée dans les données.
+Règles de conduite :
+
+- **28 classes proposées** dans l'interface et au mode IA (`ACTIVE` dans
+  `coicop.js`) ; les autres codes officiels restent reconnus (import, export).
+- **Jamais de code inconnu présenté comme officiel** : un code hors référentiel est
+  « non classé » en mode IA et signalé à l'import des sauvegardes.
+- **Pas de reclassement silencieux** : un changement de sens d'un ancien code passe
+  par `COICOP_LEGACY_MIGRATIONS` (ancien code conservé dans `coicopLegacy`, ligne « à
+  confirmer »). Seul cas à ce jour : `02.1.2` « Boissons sans alcool » (en 2018,
+  `02.1.2` est le vin) → `01.2.9`. Les 16 autres anciens codes gardent leur place.
+- **Correspondance** : `from1999()` et `to1999()` renvoient toutes les cibles (une
+  classe peut se répartir sur plusieurs), jamais un choix silencieux.
+- Les suffixes de durabilité « (ND) », « (SD) »… sont conservés dans les données et
+  masqués à l'affichage. Les libellés **néerlandais** ne sont pas encore intégrés
+  (Statbel).
+
+Étendre les classes proposées : ajouter le code à `ACTIVE` (le libellé vient du
+référentiel). Changer d'édition : régénérer `coicop2018.js` depuis les nouveaux
+fichiers officiels et écrire la migration des anciens codes.
 
 ### Suivi de précision (`npm run eval`)
 
@@ -238,16 +295,15 @@ pipeline **local** fait d'un texte de ticket, avec 0 / 3 / 6 % de bruit de type
 OCR : lignes retrouvées, montants exacts, bon code COICOP, couverture, erreurs
 signalées « à confirmer » et **calibration de la confiance**. `npm test` rejoue ces
 mesures avec des seuils (« cliquet ») : une régression fait échouer les tests.
-Mesures (voir aussi 2.9.6 : jeu d'évaluation recodé en COICOP 2018) : lignes et montants retrouvés à 100 % (jusqu'à 6 % de bruit) ;
-sur le ticket d'exemple, 96 % d'accord avec les codes de l'IA. Avant le **repli par
-règles**, le dictionnaire local ne classait aucune ligne d'un ticket d'habillement
-synthétique et 13 % d'un ticket de courses synthétique ; avec le repli, la
-couverture passe à 100 % et 93 % (98 % au global) pour 94 % de bons codes. Depuis
-le passage à la COICOP 2018 officielle (café, jus, sauces recodés), la couverture
-est de 100 % sur les trois tickets et 98 % de bons codes sans bruit (la seule erreur
-restante, « MCCAIN AIRFRY », est un code sûr du dictionnaire). Les
-codes de référence du ticket d'exemple viennent de l'IA et **ne sont pas validés
-par un humain** (voir `eval/README.md`).
+
+Mesures actuelles (codes COICOP 2018) : lignes et montants retrouvés à 100 % jusqu'à
+6 % de bruit ; sans bruit, **100 % de couverture** sur les trois tickets et **98 % de
+bons codes** (la seule erreur, « MCCAIN AIRFRY », est un code sûr du dictionnaire à
+valider) ; avec 6 % de bruit, 69 % de bons codes et 93 % des erreurs signalées « à
+confirmer ». Les codes à confiance haute sont justes à 95 %. Le repli par règles a
+fait passer la couverture du ticket de vêtements de 0 à 100 % et celle du ticket de
+courses de 13 à 100 %. Les codes de référence du ticket d'exemple viennent de
+l'IA et **ne sont pas validés par un humain** (voir `eval/README.md`).
 
 ## Vie privée et sécurité
 
@@ -295,8 +351,7 @@ par un humain** (voir `eval/README.md`).
   concordent avec la structure de l'ONU sur les 264 codes (divisions, groupes, classes) ;
   ils remplacent la traduction du projet. Les **13 divisions** des ménages (01 à 13) sont
   disponibles pour le tableau de bord. Le suffixe de durabilité « (ND) », « (SD) »… est
-  masqué à l'affichage. Pas encore de titres néerlandais (Statbel) ni de correspondance
-  avec les anciens codes.
+  masqué à l'affichage. Pas encore de titres néerlandais (Statbel).
 - **2.9.6** — **référentiel COICOP 2018 officiel** (`src/data/coicop2018.js`, extrait
   du fichier `COICOP_2018_English_structure.xlsx`, empreinte SHA-256 incluse) :
   15 divisions, 63 groupes, 186 classes ; version, source et fonctions de validation
@@ -354,9 +409,13 @@ par un humain** (voir `eval/README.md`).
 
 - **V1** — import texte, extraction, classification COICOP, correction,
   tableaux de bord, exports, PWA hors-ligne.
-- **V2 (version actuelle)** — import **photo (OCR) / PDF**, pré-traitement
+- **V2 (version actuelle, 2.9)** — import **photo (OCR) / PDF**, pré-traitement
   d'image, capture multi-photo, **mode IA (Claude Vision)**, comparaison de
-  tickets, prix unitaires, sauvegarde complète.
+  tickets, prix unitaires, sauvegarde complète, **référentiel COICOP 2018
+  officiel** avec correspondance 1999.
+- **Prochaines étapes** — libellés **néerlandais** (Statbel) et classes COICOP
+  supplémentaires (restauration, services, transports, télécommunications) après
+  validation des codes et des règles contextuelles.
 - **V3** — apprentissage automatique avancé, comparateur de prix entre
   enseignes, synchronisation cloud, modèles OCR multilingues, scan de
   codes-barres (EAN), intégration bancaire, listes de courses, alertes prix,
