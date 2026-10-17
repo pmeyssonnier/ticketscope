@@ -149,7 +149,9 @@ suivantes.
 ## Vie privée
 
 Aucune donnée personnelle n'est transmise : tickets, produits et corrections
-sont conservés uniquement dans le stockage local du navigateur (`localStorage`).
+sont conservés uniquement dans le stockage local du navigateur : les tickets dans
+IndexedDB (migrés automatiquement depuis l'ancien `localStorage`, avec repli sur
+`localStorage` si IndexedDB est indisponible), la base apprise et les réglages dans `localStorage`.
 
 ## Feuille de route
 

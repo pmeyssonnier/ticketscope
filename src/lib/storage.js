@@ -1,10 +1,10 @@
-// Persistance locale (localStorage) — tickets enregistrés et base apprise.
+// Persistance locale (localStorage) — base apprise et réglages. Les tickets
+// enregistrés sont dans IndexedDB (voir ticketStore.js).
 // Aucune donnée ne quitte l'appareil : conforme à l'usage hors-ligne de la PWA.
 
 import { normalizeStr, uid } from './format.js'
 import { AI_MODELS } from './claudeVision.js'
 
-const TICKETS_KEY = 'ticketscope.tickets.v1'
 const LEARNED_KEY = 'ticketscope.learned.v1'
 const AI_KEY = 'ticketscope.ai.v1'
 
@@ -23,30 +23,6 @@ function write(key, value) {
   } catch (e) {
     console.error('TicketScope: échec de sauvegarde locale', e)
   }
-}
-
-// --- Tickets ---
-export function loadTickets() {
-  const list = read(TICKETS_KEY, [])
-  return Array.isArray(list) ? list : []
-}
-
-export function saveTicket(ticket) {
-  const list = loadTickets()
-  const withId = ticket.id ? ticket : { ...ticket, id: uid('tk') }
-  const idx = list.findIndex((t) => t.id === withId.id)
-  if (idx >= 0) list[idx] = withId
-  else list.unshift(withId)
-  write(TICKETS_KEY, list)
-  return withId
-}
-
-export function deleteTicket(id) {
-  write(TICKETS_KEY, loadTickets().filter((t) => t.id !== id))
-}
-
-export function clearTickets() {
-  write(TICKETS_KEY, [])
 }
 
 // --- Base apprise (corrections) ---

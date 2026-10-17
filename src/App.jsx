@@ -3,10 +3,8 @@ import Importer from './components/Importer.jsx'
 import ReviewTable from './components/ReviewTable.jsx'
 import History from './components/History.jsx'
 import Settings from './components/Settings.jsx'
+import { loadTickets, saveTicket, deleteTicket } from './lib/ticketStore.js'
 import {
-  loadTickets,
-  saveTicket,
-  deleteTicket,
   learnFromCorrection,
   loadAiSettings,
   saveAiSettings,
@@ -32,8 +30,25 @@ export default function App() {
   const [draftReturn, setDraftReturn] = useState('dashboard')
 
   useEffect(() => {
-    setTickets(loadTickets())
+    let alive = true
+    loadTickets().then((list) => alive && setTickets(list)).catch(console.error)
+    return () => {
+      alive = false
+    }
   }, [])
+
+  // Exécute une écriture puis recharge la liste ; signale l'échec à l'utilisateur.
+  async function persist(write) {
+    try {
+      await write()
+      setTickets(await loadTickets())
+      return true
+    } catch (e) {
+      console.error(e)
+      alert("Enregistrement impossible : l'espace de stockage du navigateur est peut-être plein.")
+      return false
+    }
+  }
 
   function updateAi(patch) {
     setAi(saveAiSettings(patch))
@@ -52,24 +67,22 @@ export default function App() {
     setView('review')
   }
 
-  function handleSave(ticket, corrections) {
+  async function handleSave(ticket, corrections) {
     for (const c of corrections) learnFromCorrection(c.raw, c.correction)
-    saveTicket(ticket)
-    setTickets(loadTickets())
+    // En cas d'échec on reste sur l'écran de correction pour ne rien perdre.
+    if (!(await persist(() => saveTicket(ticket)))) return
     setDraft(null)
     setView(draftReturn)
   }
 
-  function handleDelete(id) {
+  async function handleDelete(id) {
     if (!confirm('Supprimer ce ticket ?')) return
-    deleteTicket(id)
-    setTickets(loadTickets())
+    await persist(() => deleteTicket(id))
   }
 
   // Mise à jour d'un ticket existant (ex. corrections depuis la comparaison).
-  function handleUpdateTicket(ticket) {
-    saveTicket(ticket)
-    setTickets(loadTickets())
+  async function handleUpdateTicket(ticket) {
+    await persist(() => saveTicket(ticket))
   }
 
   const reviewing = view === 'review' && draft
