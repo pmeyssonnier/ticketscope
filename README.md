@@ -278,6 +278,15 @@ par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.9.6** — **référentiel COICOP versionné** (`src/data/coicop.js`) : identifiant,
+  édition, statut de vérification par code et fonctions de validation
+  (format, niveau, parent). Le référentiel reste un **sous-ensemble interne non
+  confronté à la source officielle** (`verified: false`) : il ne se présente pas
+  comme officiel. Un code inconnu du mode IA devient « non classé » à relire ; une
+  sauvegarde avec un code inconnu l'importe en le signalant ; les exports ajoutent
+  une colonne `coicop_version`. Le code `02.1.2` « Boissons sans alcool » est marqué
+  *suspect* (division 02 = boissons alcoolisées) : à corriger avec la source
+  officielle, par une migration explicite (`COICOP_LEGACY_MIGRATIONS`).
 - **2.9.5** — **calculs en centimes** (`src/lib/money.js`) : sommes, écarts, totaux
   et rapprochement du ticket passent par des centimes entiers (plus de bruit de
   virgule flottante, arrondi commercial au demi-centime : 0,5 kg × 0,99 € = 0,50 €).

@@ -7,7 +7,7 @@
 // ⚠️ Ce mode envoie l'image à l'API Anthropic (elle quitte l'appareil). L'OCR
 // local (Tesseract) reste l'option par défaut, 100 % hors-ligne.
 
-import { COICOP_LABELS, coicopLabel } from '../data/coicop.js'
+import { COICOP_LABELS, coicopLabel, isKnownCoicop } from '../data/coicop.js'
 import { uid, normalizeStr, titleFromRaw } from './format.js'
 import { parseFormat } from './units.js'
 import { computeNeedsReview } from './review.js'
@@ -295,7 +295,8 @@ export function namePromotedItems(items, promotions) {
 
 export function toDraft(parsed) {
   const items = (parsed.items || []).map((it) => {
-    const coicop = it.coicop || null
+    // Un code hors référentiel n'est jamais présenté comme officiel : ligne non classée.
+    const coicop = isKnownCoicop(it.coicop) ? it.coicop : null
     const clamp01 = (v) => Math.max(0, Math.min(1, Number(v) || 0))
     // Compatibilité : une ancienne réponse n'a qu'une « confidence » (lecture ET classement).
     const confidence = clamp01(it.class_confidence ?? it.confidence)

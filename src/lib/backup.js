@@ -14,6 +14,7 @@
 
 import { loadTickets, saveTicket } from './ticketStore.js'
 import { loadLearned, mergeLearned } from './storage.js'
+import { isKnownCoicop } from '../data/coicop.js'
 
 export const BACKUP_VERSION = 1
 export const REMINDER_DAYS = 30
@@ -91,6 +92,9 @@ export function validateTicket(raw) {
     if (isNum(it.quantity) && it.quantity < 0) errors.push(`ligne ${n} : quantité négative`)
     for (const f of ITEM_TEXT) if (it[f] != null && !isStr(it[f])) errors.push(`ligne ${n} : ${f} invalide`)
     if (it.coicop != null && !isStr(it.coicop)) errors.push(`ligne ${n} : code COICOP invalide`)
+    if (isStr(it.coicop) && it.coicop && !isKnownCoicop(it.coicop)) {
+      warnings.push(`ligne ${n} : code COICOP « ${it.coicop} » inconnu du référentiel (conservé tel quel)`)
+    }
     if (it.confidence != null && !(isNum(it.confidence) && it.confidence >= 0 && it.confidence <= 1)) {
       errors.push(`ligne ${n} : confiance hors de [0 ; 1]`)
     }
