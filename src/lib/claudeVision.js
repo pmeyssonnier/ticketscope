@@ -210,6 +210,32 @@ export async function readReceiptWithClaude(files, { apiKey, model: requestedMod
 }
 
 // Convertit la réponse de Claude en brouillon exploitable par l'écran de correction.
+// Réconcilie les remises avec le total payé imprimé : si la somme des lignes
+// s'écarte du total, que des remises existent et que l'écart reste plausible
+// (promotion mal lue), on ajuste ces remises proportionnellement et on marque
+// les lignes touchées « à confirmer ». Sans remise lue, on ne touche à rien.
+export function reconcileDiscounts(items, totalPaid) {
+  const total = Number(totalPaid)
+  if (!(total > 0)) return items
+  const sum = (arr, k) => +arr.reduce((a, b) => a + (Number(b[k]) || 0), 0).toFixed(2)
+  const diff = +(total - sum(items, 'net')).toFixed(2)
+  if (Math.abs(diff) < 0.02) return items
+  const targets = items.filter((it) => it.discount < 0)
+  const oldDisc = sum(targets, 'discount')
+  if (!targets.length || oldDisc >= 0) return items
+  const newDisc = +(oldDisc + diff).toFixed(2)
+  const ratio = newDisc / oldDisc
+  if (newDisc >= 0 || ratio < 0.5 || ratio > 2) return items
+  let left = newDisc
+  const last = targets[targets.length - 1]
+  return items.map((it) => {
+    if (!targets.includes(it)) return it
+    const discount = it === last ? +left.toFixed(2) : +(it.discount * ratio).toFixed(2)
+    left = +(left - discount).toFixed(2)
+    return { ...it, discount, net: +(it.gross + discount).toFixed(2), needsReview: true }
+  })
+}
+
 export function toDraft(parsed) {
   const items = (parsed.items || []).map((it) => {
     const coicop = it.coicop || null
@@ -243,7 +269,7 @@ export function toDraft(parsed) {
     engine: 'ia',
     store: parsed.store || 'Magasin inconnu',
     date: parsed.date || null,
-    items,
+    items: reconcileDiscounts(items, parsed.total_paid),
     globalDiscountTotal: 0,
     subtotalDeclared: null,
     totalDeclared: parsed.total_paid != null ? +Number(parsed.total_paid).toFixed(2) : null,

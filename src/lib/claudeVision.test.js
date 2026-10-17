@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toDraft, safeModel, DEFAULT_AI_MODEL } from './claudeVision.js'
+import { toDraft, safeModel, reconcileDiscounts, DEFAULT_AI_MODEL } from './claudeVision.js'
 import { monthKey } from './format.js'
 import { parseTicket } from './parser.js'
 
@@ -38,5 +38,27 @@ describe('toDraft — remises', () => {
     expect(d.items.every((it) => !it.needsReview)).toBe(true)
     expect(+d.items.reduce((a, b) => a + b.discount, 0).toFixed(2)).toBe(-3.98)
     expect(+d.items.reduce((a, b) => a + b.net, 0).toFixed(2)).toBe(19.99)
+  })
+})
+
+describe('reconcileDiscounts', () => {
+  const mk = (discount) => ({ gross: 7.99, discount, net: +(7.99 + discount).toFixed(2), needsReview: false })
+  it('ramène -3,30 à -3,98 pour atteindre le total payé', () => {
+    const items = [mk(-1.1), mk(-1.1), mk(-1.1), { gross: 17.99, discount: 0, net: 17.99 }, { gross: 29.99, discount: 0, net: 29.99 }, { gross: 39.99, discount: 0, net: 39.99 }]
+    const out = reconcileDiscounts(items, 107.96)
+    expect(+out.reduce((a, b) => a + b.discount, 0).toFixed(2)).toBe(-3.98)
+    expect(+out.reduce((a, b) => a + b.net, 0).toFixed(2)).toBe(107.96)
+    expect(out.slice(0, 3).every((it) => it.needsReview)).toBe(true)
+    expect(out[3].needsReview).toBeFalsy()
+  })
+  it('ne touche à rien si déjà cohérent ou sans remise', () => {
+    const ok = [mk(-1.33), mk(-1.33), mk(-1.32)]
+    expect(reconcileDiscounts(ok, 19.99)).toBe(ok)
+    const none = [{ gross: 5, discount: 0, net: 5 }]
+    expect(reconcileDiscounts(none, 9)).toBe(none)
+  })
+  it('ignore un écart non plausible', () => {
+    const items = [mk(-1), { gross: 10, discount: 0, net: 10 }]
+    expect(reconcileDiscounts(items, 1)).toBe(items)
   })
 })
