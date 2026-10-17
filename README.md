@@ -278,6 +278,8 @@ par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.9.1** — la feuille *Synthèse COICOP* de l'export Excel est regroupée **par code**
+  (une ligne par code ; les catégories distinctes sont réunies avec « / »).
 - **2.9** — **repli par règles** pour le classement local : un produit absent du
   dictionnaire est classé par les règles génériques (vêtements, chaussures,
   alimentation…), toujours « à confirmer » (confiance 60 % ou 50 %, mention
