@@ -56,19 +56,22 @@ export function clearLearned() {
   write(LEARNED_KEY, [])
 }
 
-// --- Réglages IA (moteur de lecture, modèle, clé API — locaux à l'appareil) ---
-const AI_DEFAULTS = { engine: 'local', model: 'claude-haiku-4-5', apiKey: '' }
+// --- Réglages IA (moteur de lecture, modèle — locaux à l'appareil) ---
+// La clé API n'est jamais écrite ici : voir secretStore.js (chiffrée).
+const AI_DEFAULTS = { engine: 'local', model: 'claude-haiku-4-5' }
 
 export function loadAiSettings() {
   const s = read(AI_KEY, {})
-  const merged = { ...AI_DEFAULTS, ...(s && typeof s === 'object' ? s : {}) }
+  const { apiKey, ...stored } = s && typeof s === 'object' ? s : {} // eslint-disable-line no-unused-vars
+  const merged = { ...AI_DEFAULTS, ...stored }
   // Modèle inconnu (identifiant retiré ou altéré) -> modèle par défaut.
   if (!AI_MODELS[merged.model]) merged.model = AI_DEFAULTS.model
   return merged
 }
 
 export function saveAiSettings(patch) {
-  const next = { ...loadAiSettings(), ...patch }
+  const { apiKey, ...rest } = patch || {} // eslint-disable-line no-unused-vars
+  const next = { ...loadAiSettings(), ...rest }
   write(AI_KEY, next)
   return next
 }
