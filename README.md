@@ -278,6 +278,11 @@ par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.9.4** — classement local plus prudent (audit du 18/10) : les mots-clés
+  s'appliquent à des **mots entiers** (« lait » ne matche plus « laitue ») ; une
+  correspondance **apprise approximative** (faute OCR) n'est plus à 99 % : elle est
+  proposée « à confirmer » ; `parseAmount` **rejette** les montants malformés
+  (« 12,5abc », « 12-34 ») au lieu de les arrondir.
 - **2.9.3** — mode IA : le type d'article d'une promotion de lot (« Boxers 3 x … ») n'est
   appliqué qu'aux articles visés ; les autres reprennent leur nom de modèle, même si
   le modèle a étendu « Boxer » à tout le ticket.

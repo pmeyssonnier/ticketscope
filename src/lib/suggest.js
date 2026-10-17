@@ -8,7 +8,7 @@
 // C'est une aide : l'utilisateur voit la suggestion et l'applique s'il est
 // d'accord. Fonction pure -> testable sans navigateur.
 
-import { normalizeStr } from './format.js'
+import { normalizeStr, hasWord } from './format.js'
 import { PRODUCT_DICTIONARY } from '../data/dictionary.js'
 import { coicopLabel } from '../data/coicop.js'
 
@@ -35,7 +35,7 @@ const RULES = [
 // les faux positifs de sous-chaîne (« riz » dans « chorizo »). Les mots-clés
 // composés (avec espace) sont cherchés tels quels.
 function ruleHit(norm, k) {
-  if (k.includes(' ')) return norm.includes(k)
+  if (k.includes(' ')) return hasWord(norm, k)
   return norm.split(' ').some((t) => t === k || t.startsWith(k))
 }
 
@@ -52,8 +52,8 @@ export function suggestClassification(name) {
   for (const e of PRODUCT_DICTIONARY) {
     for (const kw of e.keywords || []) {
       const k = normalizeStr(kw)
-      if (!k || !norm.includes(k)) continue
-      if (e.mustAll && !e.mustAll.every((m) => norm.includes(normalizeStr(m)))) continue
+      if (!k || !hasWord(norm, k)) continue
+      if (e.mustAll && !e.mustAll.every((m) => hasWord(norm, normalizeStr(m)))) continue
       consider(3, k.length, e.coicop, e.category)
     }
   }
