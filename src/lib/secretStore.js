@@ -6,15 +6,21 @@
 // directe du stockage ne donnent donc que du texte chiffré.
 //
 // Limite assumée : un script exécuté dans la page pourrait toujours demander le
-// déchiffrement (la CSP de vercel.json réduit ce risque). Sans WebCrypto ou
-// IndexedDB (contexte non sécurisé, navigateur restreint), repli sur
-// localStorage en clair — `secretStorageKind()` le signale à l'interface.
+// déchiffrement (la CSP de vercel.json réduit ce risque).
+//
+// Mode dégradé (sans WebCrypto/IndexedDB, ou écriture impossible) : la clé n'est
+// JAMAIS écrite en clair ; elle reste en mémoire pour la session et
+// `saveApiKey` signale l'échec. Une ancienne clé en clair n'est supprimée
+// qu'après confirmation (relecture) qu'elle est bien chiffrée ailleurs.
+//
+// `secretStorageKind()` : 'encrypted' | 'memory' (non conservée) | 'legacy'
+// (ancienne clé en clair impossible à chiffrer, laissée en place).
 
 const DB_NAME = 'ticketscope-secrets'
 const STORE = 'kv'
 const DEVICE_KEY_ID = 'device-key'
 const SECRET_ID = 'anthropic-key'
-const PLAIN_KEY = 'ticketscope.apikey.v1' // repli sans chiffrement
+const PLAIN_KEY = 'ticketscope.apikey.v1' // ancien repli en clair (versions 2.6-2.7)
 const SETTINGS_KEY = 'ticketscope.ai.v1' // ancien emplacement (clé en clair)
 
 let kind = 'encrypted'
@@ -87,7 +93,7 @@ async function decrypt(db, blob) {
   return new TextDecoder().decode(plain)
 }
 
-// --- localStorage (repli) ---
+// --- localStorage ---
 function lsGet(k) {
   try {
     return localStorage.getItem(k)
@@ -95,11 +101,14 @@ function lsGet(k) {
     return null
   }
 }
+// true si l'écriture a réellement eu lieu.
 function lsSet(k, v) {
   try {
     localStorage.setItem(k, v)
+    return true
   } catch (e) {
     console.error('TicketScope: échec de sauvegarde locale', e)
+    return false
   }
 }
 function lsDel(k) {
@@ -110,79 +119,112 @@ function lsDel(k) {
   }
 }
 
-async function readSecret() {
-  if (canEncrypt()) {
-    try {
-      const db = await openDb()
-      const blob = await dbGet(db, SECRET_ID)
-      if (blob) {
-        try {
-          kind = 'encrypted'
-          return await decrypt(db, blob)
-        } catch {
-          // Clé d'appareil perdue (données du site purgées en partie) : le texte
-          // chiffré est inutilisable, on l'oublie.
-          await dbDel(db, SECRET_ID)
-          return ''
-        }
-      }
-      kind = 'encrypted'
-    } catch (e) {
-      console.warn('TicketScope: stockage chiffré indisponible', e)
-      kind = 'plain'
-    }
-  } else {
-    kind = 'plain'
+// --- Clés en clair héritées (réglages des versions < 2.6, repli 2.6-2.7) ---
+function readSettings() {
+  const raw = lsGet(SETTINGS_KEY)
+  if (!raw) return null
+  try {
+    const s = JSON.parse(raw)
+    return s && typeof s === 'object' ? s : null
+  } catch {
+    return null
   }
-  return lsGet(PLAIN_KEY) || ''
 }
 
+function plaintextLeftover() {
+  const fromSettings = String(readSettings()?.apiKey || '').trim()
+  return fromSettings || String(lsGet(PLAIN_KEY) || '').trim()
+}
+
+// Supprime les copies en clair. À n'appeler qu'une fois la clé confirmée
+// chiffrée (ou volontairement effacée) ; ne retire le champ des réglages que si
+// leur réécriture réussit.
+function removePlaintextLeftovers() {
+  lsDel(PLAIN_KEY)
+  const settings = readSettings()
+  if (settings && 'apiKey' in settings) {
+    const { apiKey, ...rest } = settings // eslint-disable-line no-unused-vars
+    lsSet(SETTINGS_KEY, JSON.stringify(rest))
+  }
+}
+
+// --- Écriture / lecture chiffrées ---
 async function writeSecret(value) {
   const key = (value || '').trim()
-  if (canEncrypt()) {
-    try {
-      const db = await openDb()
-      if (key) await dbPut(db, SECRET_ID, await encrypt(db, key))
-      else await dbDel(db, SECRET_ID)
-      lsDel(PLAIN_KEY) // jamais de copie en clair à côté
-      kind = 'encrypted'
-      return
-    } catch (e) {
-      console.warn('TicketScope: chiffrement impossible, repli sur localStorage', e)
+  if (!canEncrypt()) {
+    kind = 'memory'
+    if (key) throw new Error('Chiffrement indisponible : la clé n’est conservée qu’en mémoire.')
+    return
+  }
+  try {
+    const db = await openDb()
+    if (key) {
+      await dbPut(db, SECRET_ID, await encrypt(db, key))
+      // Confirmation par relecture avant de toucher aux copies en clair.
+      if ((await decrypt(db, await dbGet(db, SECRET_ID))) !== key) throw new Error('Relecture différente')
+    } else {
+      await dbDel(db, SECRET_ID)
     }
-  } 
-  kind = 'plain'
-  if (key) lsSet(PLAIN_KEY, key)
-  else lsDel(PLAIN_KEY)
+  } catch (e) {
+    kind = 'memory'
+    if (key) throw e
+    return
+  }
+  kind = 'encrypted'
+  removePlaintextLeftovers()
+}
+
+async function readEncrypted() {
+  const db = await openDb()
+  const blob = await dbGet(db, SECRET_ID)
+  if (!blob) return ''
+  try {
+    return await decrypt(db, blob)
+  } catch {
+    // Clé d'appareil perdue (données du site purgées en partie) : le texte
+    // chiffré est inutilisable, on l'oublie.
+    await dbDel(db, SECRET_ID)
+    return ''
+  }
 }
 
 // Écritures sérialisées (la saisie déclenche une sauvegarde à chaque frappe).
+// La promesse renvoyée est REJETÉE si la clé n'a pas pu être conservée ; la file,
+// elle, continue de fonctionner.
 let chain = Promise.resolve()
 export function saveApiKey(value) {
-  chain = chain.then(() => writeSecret(value)).catch((e) => console.error(e))
-  return chain
+  const run = chain.then(() => writeSecret(value))
+  chain = run.catch(() => {})
+  return run
 }
 
-// Ancienne version : la clé était dans localStorage avec les réglages.
-// On la chiffre, puis on la retire des réglages — seulement après réussite.
-async function migrateLegacy() {
-  const raw = lsGet(SETTINGS_KEY)
-  if (!raw) return
-  let settings
-  try {
-    settings = JSON.parse(raw)
-  } catch {
-    return
-  }
-  if (!settings || typeof settings !== 'object' || !('apiKey' in settings)) return
-  const legacy = String(settings.apiKey || '').trim()
-  if (legacy) await saveApiKey(legacy)
-  const { apiKey, ...rest } = settings // eslint-disable-line no-unused-vars
-  lsSet(SETTINGS_KEY, JSON.stringify(rest))
-}
-
+// Charge la clé au démarrage ; chiffre au passage une ancienne clé en clair.
 export async function loadApiKey() {
   await chain
-  await migrateLegacy()
-  return readSecret()
+  let stored = ''
+  if (canEncrypt()) {
+    try {
+      stored = await readEncrypted()
+      kind = 'encrypted'
+    } catch (e) {
+      console.warn('TicketScope: stockage chiffré indisponible', e)
+      kind = 'memory'
+    }
+  } else {
+    kind = 'memory'
+  }
+
+  const leftover = plaintextLeftover()
+  if (!leftover) return stored
+  if (stored) {
+    removePlaintextLeftovers() // déjà chiffrée : la copie en clair est superflue
+    return stored
+  }
+  try {
+    await writeSecret(leftover) // chiffre, relit, puis seulement retire le clair
+    return leftover
+  } catch {
+    kind = 'legacy' // impossible de chiffrer : on ne touche pas à l'ancienne clé
+    return leftover
+  }
 }

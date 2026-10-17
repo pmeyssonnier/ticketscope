@@ -9,7 +9,7 @@ import {
   loadAiSettings,
   saveAiSettings,
 } from './lib/storage.js'
-import { loadApiKey, saveApiKey } from './lib/secretStore.js'
+import { loadApiKey, saveApiKey, secretStorageKind } from './lib/secretStore.js'
 
 // Le tableau de bord embarque recharts (~350 ko) : chargé à la demande.
 const Dashboard = lazy(() => import('./components/Dashboard.jsx'))
@@ -27,6 +27,8 @@ export default function App() {
   // La clé API vit en mémoire ; elle est chiffrée au repos (secretStore.js).
   const [ai, setAi] = useState(() => ({ ...loadAiSettings(), apiKey: '' }))
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // 'encrypted' | 'memory' | 'legacy' : voir secretStore.js
+  const [keyKind, setKeyKind] = useState(secretStorageKind())
   // Vue de retour après enregistrement/annulation d'une correction :
   // tableau de bord après un import, historique après l'édition d'un ticket.
   const [draftReturn, setDraftReturn] = useState('dashboard')
@@ -42,7 +44,11 @@ export default function App() {
   useEffect(() => {
     let alive = true
     loadApiKey()
-      .then((key) => alive && key && setAi((a) => (a.apiKey ? a : { ...a, apiKey: key })))
+      .then((key) => {
+        if (!alive) return
+        setKeyKind(secretStorageKind())
+        if (key) setAi((a) => (a.apiKey ? a : { ...a, apiKey: key }))
+      })
       .catch(console.error)
     return () => {
       alive = false
@@ -65,7 +71,13 @@ export default function App() {
   function updateAi(patch) {
     const { apiKey, ...rest } = patch
     if (Object.keys(rest).length) saveAiSettings(rest)
-    if (apiKey !== undefined) saveApiKey(apiKey)
+    if (apiKey !== undefined) {
+      // L'échec (chiffrement indisponible, stockage plein) est signalé dans les
+      // Réglages : la clé reste utilisable en mémoire pour la session.
+      saveApiKey(apiKey)
+        .catch((e) => console.warn(e))
+        .finally(() => setKeyKind(secretStorageKind()))
+    }
     setAi((a) => ({ ...a, ...patch }))
   }
 
@@ -118,7 +130,7 @@ export default function App() {
       </header>
 
       {settingsOpen && (
-        <Settings ai={ai} updateAi={updateAi} onClose={() => setSettingsOpen(false)} />
+        <Settings ai={ai} updateAi={updateAi} keyKind={keyKind} onClose={() => setSettingsOpen(false)} />
       )}
 
       <main>
