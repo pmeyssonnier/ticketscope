@@ -67,5 +67,6 @@ export function suggestClassification(name) {
   }
 
   if (!win) return null
-  return { coicop: win.coicop, category: win.category, label: coicopLabel(win.coicop) }
+  // `priority` : 3 = dictionnaire, 2/1 = règles précises, 0 = règle très générique.
+  return { coicop: win.coicop, category: win.category, label: coicopLabel(win.coicop), priority: win.p }
 }

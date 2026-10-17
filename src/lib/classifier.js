@@ -2,11 +2,16 @@
 // un code COICOP et un niveau de confiance, à partir de la base de connaissances
 // (dictionnaire intégré + entrées apprises via les corrections utilisateur).
 
-import { normalizeStr } from './format.js'
+import { normalizeStr, titleFromRaw } from './format.js'
+import { suggestClassification } from './suggest.js'
 import { PRODUCT_DICTIONARY } from '../data/dictionary.js'
 import { coicopLabel } from '../data/coicop.js'
 
 export const REVIEW_THRESHOLD = 0.75
+// Confiance d'un code proposé par règle générique : sous le seuil (donc « à
+// confirmer »), au-dessus d'un produit inconnu (0,25).
+export const RULE_CONFIDENCE = 0.6
+export const RULE_CONFIDENCE_GENERIC = 0.5
 
 // Distance d'édition (Levenshtein) bornée à `max` — pour tolérer les fautes OCR.
 function editUpTo(a, b, max) {
@@ -108,7 +113,25 @@ export function classifyItem(item, learned = []) {
     return decorate(item, bestEntry, bestScore, 'dictionnaire')
   }
 
-  // 3) Inconnu -> à corriger.
+  // 3) Repli par règles : mots-clés génériques de catégorie (chemise, huile,
+  //    lessive…). Un code est PRÉ-REMPLI mais jamais présenté comme sûr : la
+  //    confiance reste sous le seuil, la ligne est « à confirmer ».
+  const rule = suggestClassification(item.raw)
+  if (rule) {
+    return {
+      ...item,
+      normalized: titleFromRaw(item.raw),
+      brand: '',
+      coicop: rule.coicop,
+      coicopLabel: coicopLabel(rule.coicop),
+      category: rule.category,
+      confidence: rule.priority >= 1 ? RULE_CONFIDENCE : RULE_CONFIDENCE_GENERIC,
+      source: 'regle',
+      needsReview: true,
+    }
+  }
+
+  // 4) Inconnu -> à corriger.
   return {
     ...item,
     normalized: '',
