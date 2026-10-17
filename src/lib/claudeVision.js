@@ -104,6 +104,8 @@ Consignes :
 - "format" = contenance d'UN exemplaire telle qu'imprimée : poids ("750 g", "1 kg"), volume ("880 ml", "1 L", "37,5 cl"), ou nombre ("12 pièces"). Mets "vrac" si vendu au poids, "" si aucune contenance.
 - Vêtements et chaussures : le libellé est souvent un nom de modèle suivi de la couleur et de la taille (« DAXFORDMC BLUE,XXL »). Garde-le tel quel dans "raw" ; dans "product", indique le type d'article s'il se déduit (boxer, chemise, pull…), sinon le nom du modèle.
 - Rattache une réduction "sur article" au produit concerné : "discount" est négatif, "net" = quantity×unit_price + discount.
+- Promotion de lot (ex. « Boxers 3 x 19,99EUR = -3,98 ») : la remise concerne PLUSIEURS articles (ceux marqués du même signe, p. ex. « a », ou de même libellé). Répartis-la à parts égales sur ces articles (centimes d'écart sur le dernier) : la somme des "discount" doit être égale au montant imprimé. Ne la mets jamais en entier sur un seul article.
+- Contrôle final : la somme des "net" de toutes les lignes doit être égale à "total_paid".
 - Attribue le code COICOP le plus adapté depuis CETTE liste (n'invente pas d'autre code ; si vraiment inconnu, mets "") et une "category" courte en français :
 ${list}
 - "confidence" entre 0 et 1 : ta certitude sur la lecture ET la classification de la ligne.
@@ -208,6 +210,32 @@ export async function readReceiptWithClaude(files, { apiKey, model: requestedMod
 }
 
 // Convertit la réponse de Claude en brouillon exploitable par l'écran de correction.
+// Réconcilie les remises avec le total payé imprimé : si la somme des lignes
+// s'écarte du total, que des remises existent et que l'écart reste plausible
+// (promotion mal lue), on ajuste ces remises proportionnellement et on marque
+// les lignes touchées « à confirmer ». Sans remise lue, on ne touche à rien.
+export function reconcileDiscounts(items, totalPaid) {
+  const total = Number(totalPaid)
+  if (!(total > 0)) return items
+  const sum = (arr, k) => +arr.reduce((a, b) => a + (Number(b[k]) || 0), 0).toFixed(2)
+  const diff = +(total - sum(items, 'net')).toFixed(2)
+  if (Math.abs(diff) < 0.02) return items
+  const targets = items.filter((it) => it.discount < 0)
+  const oldDisc = sum(targets, 'discount')
+  if (!targets.length || oldDisc >= 0) return items
+  const newDisc = +(oldDisc + diff).toFixed(2)
+  const ratio = newDisc / oldDisc
+  if (newDisc >= 0 || ratio < 0.5 || ratio > 2) return items
+  let left = newDisc
+  const last = targets[targets.length - 1]
+  return items.map((it) => {
+    if (!targets.includes(it)) return it
+    const discount = it === last ? +left.toFixed(2) : +(it.discount * ratio).toFixed(2)
+    left = +(left - discount).toFixed(2)
+    return { ...it, discount, net: +(it.gross + discount).toFixed(2), needsReview: true }
+  })
+}
+
 export function toDraft(parsed) {
   const items = (parsed.items || []).map((it) => {
     const coicop = it.coicop || null
@@ -232,7 +260,7 @@ export function toDraft(parsed) {
       category: it.category || (coicop ? '' : 'Inconnu'),
       confidence,
       source: 'ia',
-      needsReview: !coicop || confidence < 0.75,
+      needsReview: !coicop || confidence < 0.75 || discount < -gross,
     }
   })
   return {
@@ -241,7 +269,7 @@ export function toDraft(parsed) {
     engine: 'ia',
     store: parsed.store || 'Magasin inconnu',
     date: parsed.date || null,
-    items,
+    items: reconcileDiscounts(items, parsed.total_paid),
     globalDiscountTotal: 0,
     subtotalDeclared: null,
     totalDeclared: parsed.total_paid != null ? +Number(parsed.total_paid).toFixed(2) : null,
