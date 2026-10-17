@@ -281,6 +281,15 @@ par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.9.8** — **correspondance COICOP 1999 ↔ 2018** (`src/data/coicop1999.js` et
+  `coicopCorrespondence.js`), d'après le tableau officiel de l'ONU (2 octobre 2024,
+  empreinte SHA-256 consignée) : titres 1999 et équivalents dans les deux sens. Une classe
+  peut se répartir sur plusieurs : toutes les cibles sont renvoyées, jamais un choix
+  silencieux. Les exports ont une colonne `coicop_1999` (équivalents de l'ancienne
+  nomenclature, séparés par « | »), utile pour comparer à des statistiques qui n'ont pas
+  migré. **Tickets déjà enregistrés** : 16 des 17 anciens codes de l'application gardent
+  leur place en 2018 (leur cible principale est eux-mêmes) ; le 17e (`02.1.2` « Boissons
+  sans alcool », propre à l'application) est déjà migré depuis la 2.9.6.
 - **2.9.7** — **libellés français officiels** de la COICOP 2018 : titres issus de la liste
   de codes Eurostat `ESTAT:COICOP18` 3.2 (fichier `ESTAT_COICOP18_3.2.xml.gz`), qui
   concordent avec la structure de l'ONU sur les 264 codes (divisions, groupes, classes) ;

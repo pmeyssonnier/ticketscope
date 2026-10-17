@@ -6,6 +6,14 @@ import { monthKey } from './format.js'
 import { unitPriceFor } from './units.js'
 import { sumMoney } from './money.js'
 import { COICOP_REFERENCE } from '../data/coicop.js'
+import { to1999 } from '../data/coicopCorrespondence.js'
+
+// Codes COICOP 1999 correspondant à une classe 2018, du plus au moins important, séparés par « | »
+// (plusieurs si la classe 2018 provient de plusieurs classes 1999). Vide si inconnu.
+function equivalents1999(code) {
+  const r = code ? to1999(code) : null
+  return r ? r.targets.map((t) => t.code).join(' | ') : ''
+}
 
 // Neutralise l'injection de formule (Excel/LibreOffice) : une cellule texte
 // commençant par = + - @ (ou tab/CR) serait interprétée comme une formule.
@@ -39,6 +47,7 @@ export function flattenRows(tickets) {
         coicop: it.coicop || '',
         coicop_libelle: it.coicopLabel || '',
         coicop_version: COICOP_REFERENCE.id, // référentiel utilisé pour ce code
+        coicop_1999: equivalents1999(it.coicop), // équivalent(s) dans l'ancienne nomenclature
         categorie: safeCell(it.category || ''),
         confiance: it.confidence, // confiance de CLASSEMENT (COICOP)
         confiance_lecture: it.readConfidence ?? '', // confiance de lecture (OCR / IA), vide si inconnue

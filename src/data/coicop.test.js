@@ -143,5 +143,6 @@ describe('code hors référentiel', () => {
   it('exports : chaque ligne indique le référentiel utilisé', () => {
     const rows = flattenRows([{ id: 't', store: 'S', date: '2024-01-01', items: [{ raw: 'A', coicop: '01.1.4', quantity: 1, net: 1 }] }])
     expect(rows[0].coicop_version).toBe(COICOP_REFERENCE.id)
+    expect(rows[0].coicop_1999).toBe('01.1.4') // lait : une seule classe 1999
   })
 })
