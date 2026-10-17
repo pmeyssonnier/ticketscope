@@ -150,3 +150,18 @@ describe('migration idempotente (audit P1)', () => {
     expect(localStorage.getItem(LEGACY_KEY)).toBeNull()
   })
 })
+
+describe('ancien code COICOP 02.1.2 « Boissons sans alcool » (ticketStore)', () => {
+  it('migré à la lecture vers 01.2.9, à confirmer, avec l\'ancien code conservé', async () => {
+    const s = await freshStore()
+    const items = [
+      { id: 'i1', raw: 'COCA', coicop: '02.1.2', coicopLabel: 'Boissons sans alcool', needsReview: false },
+      { id: 'i2', raw: 'VIN', coicop: '02.1.2', coicopLabel: 'Vin', needsReview: false },
+    ]
+    await s.saveTicket(ticket('a', '2024-01-01T10:00:00Z', { items }))
+    const [t] = await s.loadTickets()
+    expect(t.items[0]).toMatchObject({ coicop: '01.2.9', coicopLegacy: '02.1.2', needsReview: true })
+    expect(t.items[1]).toMatchObject({ coicop: '02.1.2', needsReview: false })
+  })
+})
+

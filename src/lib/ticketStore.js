@@ -7,6 +7,7 @@
 // puis la clé historique est supprimée — seulement une fois la copie réussie.
 
 import { uid } from './format.js'
+import { migrateTicketCoicop } from '../data/coicop.js'
 
 const DB_NAME = 'ticketscope'
 const DB_VERSION = 1
@@ -199,7 +200,8 @@ export async function storageKind() {
 }
 
 export async function loadTickets() {
-  return (await getBackend()).all()
+  // Anciens codes COICOP au sens périmé : migrés à la lecture (persistés au prochain enregistrement).
+  return (await (await getBackend()).all()).map(migrateTicketCoicop)
 }
 
 export async function saveTicket(ticket) {

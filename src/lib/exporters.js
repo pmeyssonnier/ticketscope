@@ -5,6 +5,7 @@
 import { monthKey } from './format.js'
 import { unitPriceFor } from './units.js'
 import { sumMoney } from './money.js'
+import { COICOP_REFERENCE } from '../data/coicop.js'
 
 // Neutralise l'injection de formule (Excel/LibreOffice) : une cellule texte
 // commençant par = + - @ (ou tab/CR) serait interprétée comme une formule.
@@ -37,6 +38,7 @@ export function flattenRows(tickets) {
         unite_prix: up ? up.label : '',
         coicop: it.coicop || '',
         coicop_libelle: it.coicopLabel || '',
+        coicop_version: COICOP_REFERENCE.id, // référentiel utilisé pour ce code
         categorie: safeCell(it.category || ''),
         confiance: it.confidence, // confiance de CLASSEMENT (COICOP)
         confiance_lecture: it.readConfidence ?? '', // confiance de lecture (OCR / IA), vide si inconnue

@@ -15,7 +15,16 @@ import { coicopLabel } from '../data/coicop.js'
 // Règles génériques. `p` = priorité (plus haut = plus déterminant) pour
 // départager les chevauchements (« jus d'orange » -> boisson, pas fruit).
 const RULES = [
-  { p: 2, coicop: '02.1.2', category: 'Boissons sans alcool', kw: ['jus', 'soda', 'limonade', 'cola', 'sirop', 'nectar', 'ice tea', 'the glace', 'eau petillante', 'eau plate', 'boisson', 'tonic', 'ginger'] },
+  { p: 2, coicop: '01.2.1', category: 'Jus', kw: ['jus', 'nectar'] },
+  { p: 2, coicop: '01.2.5', category: 'Eau', kw: ['eau petillante', 'eau plate', 'eau gazeuse', 'eau minerale'] },
+  { p: 2, coicop: '01.2.6', category: 'Boissons rafraîchissantes', kw: ['soda', 'limonade', 'cola', 'sirop', 'ice tea', 'the glace', 'tonic', 'ginger'] },
+  { p: 2, coicop: '01.2.9', category: 'Boissons sans alcool', kw: ['boisson'] },
+  { p: 2, coicop: '01.2.2', category: 'Café', kw: ['cafe', 'espresso', 'nespresso'] },
+  { p: 2, coicop: '01.2.3', category: 'Thé et infusions', kw: ['infusion', 'tisane', 'the vert', 'the noir', 'earl grey', 'lipton'] },
+  { p: 2, coicop: '02.1.2', category: 'Vin', kw: ['vin rouge', 'vin blanc', 'vin rose', 'champagne', 'cava', 'prosecco'] },
+  { p: 2, coicop: '02.1.3', category: 'Bière', kw: ['biere', 'pils', 'lager'] },
+  { p: 2, coicop: '02.1.1', category: 'Spiritueux', kw: ['whisky', 'vodka', 'rhum', 'cognac', 'liqueur'] },
+  { p: 2, coicop: '01.1.9', category: 'Sauces et condiments', kw: ['sauce', 'ketchup', 'mayonnaise', 'moutarde', 'vinaigre'] },
   { p: 2, coicop: '05.6.1', category: "Produits d'entretien", kw: ['lessive', 'nettoyant', 'detergent', 'assouplissant', 'javel', 'vaisselle', 'desinfectant', 'anticalcaire', 'adoucissant', 'wc', 'savon menager'] },
   { p: 1, coicop: '01.1.3', category: 'Poisson et fruits de mer', kw: ['poisson', 'saumon', 'thon', 'cabillaud', 'crevette', 'scampi', 'moule', 'surimi', 'tarama', 'colin', 'maquereau', 'sardine'] },
   { p: 1, coicop: '01.1.2', category: 'Viandes', kw: ['viande', 'boeuf', 'porc', 'poulet', 'dinde', 'jambon', 'saucisse', 'lardon', 'burger', 'steak', 'hache', 'charcuterie', 'salami', 'bacon', 'iberico', 'chorizo', 'merguez'] },

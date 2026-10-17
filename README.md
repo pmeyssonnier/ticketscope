@@ -238,11 +238,14 @@ pipeline **local** fait d'un texte de ticket, avec 0 / 3 / 6 % de bruit de type
 OCR : lignes retrouvées, montants exacts, bon code COICOP, couverture, erreurs
 signalées « à confirmer » et **calibration de la confiance**. `npm test` rejoue ces
 mesures avec des seuils (« cliquet ») : une régression fait échouer les tests.
-Mesures : lignes et montants retrouvés à 100 % (jusqu'à 6 % de bruit) ;
+Mesures (voir aussi 2.9.6 : jeu d'évaluation recodé en COICOP 2018) : lignes et montants retrouvés à 100 % (jusqu'à 6 % de bruit) ;
 sur le ticket d'exemple, 96 % d'accord avec les codes de l'IA. Avant le **repli par
 règles**, le dictionnaire local ne classait aucune ligne d'un ticket d'habillement
 synthétique et 13 % d'un ticket de courses synthétique ; avec le repli, la
-couverture passe à 100 % et 93 % (98 % au global) pour 94 % de bons codes. Les
+couverture passe à 100 % et 93 % (98 % au global) pour 94 % de bons codes. Depuis
+le passage à la COICOP 2018 officielle (café, jus, sauces recodés), la couverture
+est de 100 % sur les trois tickets et 98 % de bons codes sans bruit (la seule erreur
+restante, « MCCAIN AIRFRY », est un code sûr du dictionnaire). Les
 codes de référence du ticket d'exemple viennent de l'IA et **ne sont pas validés
 par un humain** (voir `eval/README.md`).
 
@@ -278,6 +281,17 @@ par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.9.6** — **référentiel COICOP 2018 officiel** (`src/data/coicop2018.js`, extrait
+  du fichier `COICOP_2018_English_structure.xlsx`, empreinte SHA-256 incluse) :
+  15 divisions, 63 groupes, 186 classes ; version, source et fonctions de validation
+  (`src/data/coicop.js`). Libellés français = traduction du projet. Les classes
+  proposées passent de 17 à 28 (boissons sans alcool `01.2.x`, vin/bière/spiritueux
+  `02.1.x`, tabac). **Correction** : `02.1.2` est le **vin** ; les boissons sans
+  alcool sont en `01.2.x` (café `01.2.2`, eau `01.2.5`, sodas `01.2.6`, jus
+  `01.2.1`) ; sauces et condiments en `01.1.9`. Les anciens tickets et sauvegardes
+  qui portaient `02.1.2` « Boissons sans alcool » sont migrés vers `01.2.9` (à
+  confirmer, ancien code conservé dans `coicopLegacy`). Un code inconnu du mode IA
+  devient « non classé » ; les exports ajoutent la colonne `coicop_version`.
 - **2.9.5** — **calculs en centimes** (`src/lib/money.js`) : sommes, écarts, totaux
   et rapprochement du ticket passent par des centimes entiers (plus de bruit de
   virgule flottante, arrondi commercial au demi-centime : 0,5 kg × 0,99 € = 0,50 €).
