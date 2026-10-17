@@ -22,7 +22,7 @@ describe('suggestClassification', () => {
 
   it('renvoie un libellé lisible', () => {
     expect(suggestClassification('Chocolat').label).toBe(
-      'Sucre, confiserie et desserts',
+      'Sucre, confiseries et desserts',
     )
   })
 

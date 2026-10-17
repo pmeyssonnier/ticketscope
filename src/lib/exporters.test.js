@@ -39,4 +39,15 @@ describe('export : confiance de lecture', () => {
     expect(pain.lignes).toBe(3)
     expect(pain.categorie).toBe('Pain / Viennoiserie')
   })
+
+  it('colonne coicop_1999 : équivalents dans l\'ancienne nomenclature, plusieurs si la classe a été fusionnée', () => {
+    const rows = flattenRows([{ id: 't', items: [
+      { raw: 'a', coicop: '01.1.4', net: 1 },
+      { raw: 'b', coicop: '01.2.2', net: 1 }, // café 2018 ← thé/café/cacao 1999 (01.2.1)
+      { raw: 'c', coicop: '', net: 1 },
+      { raw: 'd', coicop: '99.9.9', net: 1 },
+    ] }])
+    expect(rows.map((r) => r.coicop_1999)).toEqual(['01.1.4', '01.2.1', '', ''])
+  })
 })
+

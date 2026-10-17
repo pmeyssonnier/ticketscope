@@ -16,7 +16,8 @@ describe('référentiel COICOP 2018 versionné', () => {
   it('est identifié, sourcé et vérifié contre le fichier officiel', () => {
     expect(COICOP_REFERENCE.id).toBe('coicop-2018')
     expect(COICOP_REFERENCE.edition).toBe('COICOP 2018')
-    expect(COICOP_REFERENCE.sha256).toMatch(/^[0-9a-f]{64}$/)
+    expect(COICOP_REFERENCE.sources).toHaveLength(2)
+    for (const h of COICOP_REFERENCE.sha256) expect(h).toMatch(/^[0-9a-f]{64}$/)
     expect(COICOP_REFERENCE.verified).toBe(true)
   })
 
@@ -24,6 +25,24 @@ describe('référentiel COICOP 2018 versionné', () => {
     const byLevel = { 1: 0, 2: 0, 3: 0 }
     for (const [code] of official.codes) byLevel[coicopLevel(code)] += 1
     expect(byLevel).toEqual({ 1: 15, 2: 63, 3: 186 })
+  })
+
+  it('titres français officiels (liste Eurostat ESTAT:COICOP18 3.2) et divisions 01 à 13', () => {
+    expect(coicopInfo('01').titleFr).toBe('Produits alimentaires et boissons non alcoolisées')
+    expect(coicopInfo('01.1.1').titleFr).toBe('Céréales et produits à base de céréales (ND)')
+    expect(coicopLabel('01.1.1')).toBe('Céréales et produits à base de céréales') // suffixe (ND) masqué
+    expect(coicopInfo('01.1.1').titleEn).toBe('Cereals and cereal products (ND)')
+    expect(coicopLabel('01.2.5')).toBe('Eau')
+    expect(Object.keys(COICOP_DIVISIONS).sort()).toEqual(['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13'])
+    expect(COICOP_DIVISIONS['12']).toBe('Assurance et services financiers')
+    expect(COICOP_DIVISIONS['13']).toBe('Soins corporels, protection sociale et biens et services divers')
+  })
+
+  it('chaque code de la structure a un titre anglais et français non vides', () => {
+    for (const [code, en, fr] of official.codes) {
+      expect(en.length, code).toBeGreaterThan(1)
+      expect(fr.length, code).toBeGreaterThan(1)
+    }
   })
 
   it('chaque code proposé est une classe officielle, avec titre officiel et libellé français', () => {
@@ -124,5 +143,6 @@ describe('code hors référentiel', () => {
   it('exports : chaque ligne indique le référentiel utilisé', () => {
     const rows = flattenRows([{ id: 't', store: 'S', date: '2024-01-01', items: [{ raw: 'A', coicop: '01.1.4', quantity: 1, net: 1 }] }])
     expect(rows[0].coicop_version).toBe(COICOP_REFERENCE.id)
+    expect(rows[0].coicop_1999).toBe('01.1.4') // lait : une seule classe 1999
   })
 })
