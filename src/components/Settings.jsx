@@ -32,8 +32,10 @@ export default function Settings({ ai, updateAi, onClose }) {
 
         <label className="field">Modèle IA (mode ✨ Claude)</label>
         <select value={ai.model} onChange={(e) => updateAi({ model: e.target.value })}>
-          <option value="claude-haiku-5-5">Haiku 5.5 — rapide / très économique</option>
-          <option value="claude-sonnet-5-5">Sonnet 5.5 — plus précis</option>
+          <option value="claude-haiku-4-5">Haiku 4.5 — rapide / économique (recommandé)</option>
+          <option value="claude-haiku-5-5">Haiku 5.5 — plus récent, moins cher (à tester)</option>
+          <option value="claude-sonnet-5">Sonnet 5 — plus précis</option>
+          <option value="claude-sonnet-5-5">Sonnet 5.5 — plus précis (à tester)</option>
         </select>
 
         <label className="field" style={{ marginTop: 12 }}>

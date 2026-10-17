@@ -5,7 +5,7 @@ import { classifyItems } from '../lib/classifier.js'
 import { loadLearned } from '../lib/storage.js'
 import { uid } from '../lib/format.js'
 import { extractText, extractTextMulti } from '../lib/ocr.js'
-import { readReceiptWithClaude } from '../lib/claudeVision.js'
+import { readReceiptWithClaude, AI_MODELS } from '../lib/claudeVision.js'
 import { parseFormat } from '../lib/units.js'
 
 export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
@@ -193,7 +193,7 @@ export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
       {isClaude && (
         <div className="ai-panel ai-row">
           <span className="muted">
-            Modèle : <b>{ai.model.includes('haiku') ? 'Haiku 5.5' : 'Sonnet 5.5'}</b>
+            Modèle : <b>{AI_MODELS[ai.model]?.label || ai.model}</b>
             {ai.apiKey.trim() ? '' : ' · clé API manquante'}
           </span>
           <button type="button" className="btn" style={{ padding: '5px 12px' }} onClick={onOpenSettings} disabled={busy}>
