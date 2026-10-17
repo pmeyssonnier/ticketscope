@@ -111,6 +111,7 @@ src/
     secretStore.js   Clé API Anthropic chiffrée
     backup.js        Sauvegarde / restauration complète
     exporters.js     Exports Excel / CSV / JSON
+    xlsxWriter.js    Écriture .xlsx maison (remplace SheetJS, sans dépendance de lecture)
     parser.test.js   Tests unitaires
   components/        Interface React (Import, Correction, Tableau de bord, Historique)
 scripts/

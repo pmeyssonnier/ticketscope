@@ -94,7 +94,8 @@ export function parseFormat(label) {
 // du format. Renvoie { value, label } (ex. { 2.63, '€/kg' }) ou null.
 export function unitPrice(net, quantity, format) {
   const f = typeof format === 'string' ? parseFormat(format) : format
-  if (!f || f.baseQty == null || net == null) return null
+  // Un montant nul ou négatif (remise, promotion) n'a pas de prix unitaire.
+  if (!f || f.baseQty == null || net == null || Number(net) <= 0) return null
   const totalBase = f.baseQty * (Number(quantity) || 1)
   if (!totalBase) return null
   return { value: +(net / totalBase).toFixed(2), label: `€/${f.base}` }
