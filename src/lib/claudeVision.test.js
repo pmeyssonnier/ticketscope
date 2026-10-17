@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toDraft, safeModel, DEFAULT_AI_MODEL } from './claudeVision.js'
+import { toDraft, safeModel, buildPrompt, DEFAULT_AI_MODEL } from './claudeVision.js'
 import { monthKey } from './format.js'
 import { parseTicket } from './parser.js'
 
@@ -70,6 +70,44 @@ describe('promotions de lot (ticket Celio)', () => {
   })
   it('ignore une promotion sans montant négatif', () => {
     const d = toDraft({ store: '', date: '', total_paid: 5, items: [line('A', 5)], promotions: [{ label: 'x', amount: 2, item_numbers: [] }] })
+    expect(d.items).toHaveLength(1)
+  })
+})
+
+describe('consigne au modèle (audit P1)', () => {
+  const prompt = buildPrompt()
+  it('l\'invariant de total tient compte des promotions', () => {
+    expect(prompt).toContain('la somme des "net" des "items" PLUS la somme des "amount" des "promotions"')
+    expect(prompt).not.toContain('la somme des "net" de toutes les lignes')
+  })
+  it('les remises globales vont dans « promotions » (plus ignorées)', () => {
+    expect(prompt).toContain('"item_numbers": []')
+    expect(prompt).not.toMatch(/Ignore[^\n]*remises globales/)
+  })
+  it('la liste COICOP imposée contient l\'habillement', () => {
+    expect(prompt).toContain('03.1.2')
+  })
+})
+
+describe('plusieurs promotions : l\'invariant du prompt tient', () => {
+  const line = (raw, unit_price) => ({ raw, product: raw, quantity: 1, unit_price, discount: 0, net: unit_price, coicop: '03.1.2', confidence: 0.9 })
+  it('somme(items.net) + somme(promotions.amount) = total_paid', () => {
+    const items = [line('A', 7.99), line('B', 7.99), line('C', 7.99), line('D', 12.5), line('E', 12.5), line('F', 30)]
+    const promotions = [
+      { label: '3 pour 19,99', amount: -3.98, item_numbers: [1, 2, 3] },
+      { label: '2e à -50 %', amount: -6.25, item_numbers: [4, 5] },
+      { label: 'Coupon fidélité', amount: -5, item_numbers: [] },
+    ]
+    const total_paid = +(7.99 * 3 + 25 + 30 - 3.98 - 6.25 - 5).toFixed(2)
+    const d = toDraft({ store: 'S', date: '', total_paid, items, promotions })
+    expect(d.items).toHaveLength(9)
+    expect(+d.items.reduce((a, b) => a + b.net, 0).toFixed(2)).toBe(total_paid)
+    expect(d.items.slice(6).map((x) => x.net)).toEqual([-3.98, -6.25, -5])
+    expect(d.items[8].coicop).toBeNull() // remise globale : pas d'article de référence
+    expect(d.items[7].coicop).toBe('03.1.2')
+  })
+  it('ignore une promotion nulle ou positive (pas d\'invention)', () => {
+    const d = toDraft({ store: '', date: '', total_paid: 5, items: [line('A', 5)], promotions: [{ label: 'x', amount: 0, item_numbers: [] }, { label: 'y', amount: 2, item_numbers: [] }] })
     expect(d.items).toHaveLength(1)
   })
 })

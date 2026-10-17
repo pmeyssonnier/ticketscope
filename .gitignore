@@ -34,3 +34,8 @@ logs/
 # (regenerated on install/build; the language model in lang/ IS versioned)
 public/tesseract/*.js
 public/tesseract/*.wasm
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/

@@ -117,13 +117,94 @@ describe('migration depuis les réglages en clair', () => {
   })
 })
 
-describe('repli sans IndexedDB', () => {
-  it('stocke en clair et le signale', async () => {
+describe('mode dégradé (audit P1) : jamais de clé en clair, erreurs propagées', () => {
+  const stored = () => localStorage.dump()
+
+  it('sans IndexedDB : saveApiKey échoue, la clé n\'est écrite nulle part', async () => {
     globalThis.indexedDB = undefined
     const s = await freshStore()
-    await s.saveApiKey(SECRET)
+    await expect(s.saveApiKey(SECRET)).rejects.toThrow(/mémoire/)
+    expect(s.secretStorageKind()).toBe('memory')
+    expect(stored()).not.toContain('SECRET-VALUE')
+    expect(localStorage.getItem(PLAIN_KEY)).toBeNull()
+  })
+
+  it('effacer la clé ne lève pas d\'erreur, même sans IndexedDB', async () => {
+    globalThis.indexedDB = undefined
+    const s = await freshStore()
+    await expect(s.saveApiKey('')).resolves.toBeUndefined()
+  })
+
+  it('ancienne clé en clair + chiffrement impossible : conservée telle quelle (kind legacy)', async () => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ engine: 'claude', apiKey: SECRET }))
+    globalThis.indexedDB = undefined
+    const s = await freshStore()
     expect(await s.loadApiKey()).toBe(SECRET)
-    expect(s.secretStorageKind()).toBe('plain')
-    expect(localStorage.getItem(PLAIN_KEY)).toBe(SECRET)
+    expect(s.secretStorageKind()).toBe('legacy')
+    expect(JSON.parse(localStorage.getItem(SETTINGS_KEY)).apiKey).toBe(SECRET) // pas supprimée
+  })
+
+  it('écriture chiffrée impossible (quota) : l\'ancienne clé n\'est pas supprimée', async () => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ engine: 'claude', apiKey: 'sk-ancienne' }))
+    const s = await freshStore()
+    const spy = vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError')
+    })
+    await expect(s.saveApiKey(SECRET)).rejects.toThrow()
+    expect(s.secretStorageKind()).toBe('memory')
+    expect(JSON.parse(localStorage.getItem(SETTINGS_KEY)).apiKey).toBe('sk-ancienne')
+    expect(stored()).not.toContain('SECRET-VALUE')
+    spy.mockRestore()
+  })
+
+  it('au chargement, une migration qui échoue garde l\'ancienne clé (kind legacy)', async () => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ apiKey: SECRET }))
+    const s = await freshStore()
+    const spy = vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError')
+    })
+    expect(await s.loadApiKey()).toBe(SECRET)
+    expect(s.secretStorageKind()).toBe('legacy')
+    expect(JSON.parse(localStorage.getItem(SETTINGS_KEY)).apiKey).toBe(SECRET)
+    spy.mockRestore()
+  })
+
+  it('une écriture ratée ne bloque pas les suivantes', async () => {
+    const s = await freshStore()
+    const spy = vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError')
+    })
+    await expect(s.saveApiKey('sk-a')).rejects.toThrow()
+    spy.mockRestore()
+    await s.saveApiKey(SECRET)
+    expect(s.secretStorageKind()).toBe('encrypted')
+    expect(await s.loadApiKey()).toBe(SECRET)
+  })
+
+  it('réécriture des réglages impossible : la clé est chiffrée, la copie en clair reste (rien n\'est perdu)', async () => {
+    const real = globalThis.localStorage
+    real.setItem(SETTINGS_KEY, JSON.stringify({ engine: 'claude', apiKey: SECRET }))
+    globalThis.localStorage = { ...real, getItem: real.getItem, removeItem: real.removeItem, dump: real.dump, setItem: () => { throw new Error('quota') } }
+    const s = await freshStore()
+    expect(await s.loadApiKey()).toBe(SECRET)
+    expect(JSON.parse(real.getItem(SETTINGS_KEY)).apiKey).toBe(SECRET) // non retirée : réécriture échouée
+    expect(s.secretStorageKind()).toBe('encrypted')
+  })
+
+  it('migre le repli en clair des versions 2.6-2.7 vers le stockage chiffré', async () => {
+    localStorage.setItem(PLAIN_KEY, SECRET)
+    const s = await freshStore()
+    expect(await s.loadApiKey()).toBe(SECRET)
+    expect(localStorage.getItem(PLAIN_KEY)).toBeNull()
+    expect(s.secretStorageKind()).toBe('encrypted')
+    expect((await rawRecords()).some((r) => r && r.data)).toBe(true)
+  })
+
+  it('effacer la clé retire aussi les copies en clair héritées', async () => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ engine: 'claude', apiKey: SECRET }))
+    const s = await freshStore()
+    await s.saveApiKey('')
+    expect(stored()).not.toContain('SECRET-VALUE')
+    expect(JSON.parse(localStorage.getItem(SETTINGS_KEY))).toEqual({ engine: 'claude' })
   })
 })

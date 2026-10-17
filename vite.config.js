@@ -4,6 +4,13 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { readFileSync } from 'node:fs'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+const vercel = JSON.parse(readFileSync(new URL('./vercel.json', import.meta.url), 'utf8'))
+
+// Mêmes en-têtes de sécurité (CSP…) que sur Vercel pour `npm run preview` et les
+// tests de bout en bout : on teste l'application telle qu'elle est servie.
+const securityHeaders = Object.fromEntries(
+  ((vercel.headers || []).find((h) => h.source === '/(.*)')?.headers || []).map((h) => [h.key, h.value]),
+)
 
 // TicketScope BE — installable PWA, works offline once loaded.
 export default defineConfig({
@@ -57,6 +64,7 @@ export default defineConfig({
       },
     }),
   ],
+  preview: { headers: securityHeaders },
   test: {
     environment: 'node',
     include: ['src/**/*.test.js'],

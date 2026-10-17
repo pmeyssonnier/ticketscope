@@ -92,3 +92,61 @@ describe('repli sans IndexedDB', () => {
     expect((await s.loadTickets()).map((t) => t.id)).toEqual(['b'])
   })
 })
+
+describe('migration idempotente (audit P1)', () => {
+  const legacyList = () => [
+    { id: 't1', createdAt: '2024-01-01T00:00:00Z', store: 'ANCIEN', items: [] },
+    { id: 't2', createdAt: '2024-01-02T00:00:00Z', store: 'DEUX', items: [] },
+  ]
+
+  // localStorage dont removeItem(clé historique) échoue sans bruit.
+  function lsWithFailingRemoval() {
+    const store = new Map()
+    globalThis.localStorage = {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, String(v)),
+      removeItem: () => {},
+    }
+    store.set(LEGACY_KEY, JSON.stringify(legacyList()))
+  }
+
+  async function relaunch() {
+    vi.resetModules() // même IndexedDB et même localStorage, nouveau moteur
+    return import('./ticketStore.js')
+  }
+
+  it('une relance après échec de suppression ne recopie rien', async () => {
+    lsWithFailingRemoval()
+    let s = await freshStore()
+    expect((await s.loadTickets()).map((t) => t.id)).toEqual(['t2', 't1'])
+
+    await s.saveTicket({ id: 't1', createdAt: '2024-01-01T00:00:00Z', store: 'MODIFIÉ', items: [] }) // modifié
+    await s.deleteTicket('t2') // supprimé
+
+    s = await relaunch()
+    const list = await s.loadTickets()
+    expect(list.map((t) => `${t.id}:${t.store}`)).toEqual(['t1:MODIFIÉ'])
+  })
+
+  it('sans marqueur, un ticket déjà présent n\'est jamais écrasé', async () => {
+    const s0 = await freshStore()
+    await s0.saveTicket({ id: 't1', createdAt: '2024-01-01T00:00:00Z', store: 'LOCAL', items: [] })
+    localStorage.setItem(LEGACY_KEY, JSON.stringify(legacyList()))
+    const s = await relaunch()
+    const list = await s.loadTickets()
+    expect(list.find((t) => t.id === 't1').store).toBe('LOCAL')
+    expect(list.map((t) => t.id).sort()).toEqual(['t1', 't2']) // t2 est bien ajouté
+  })
+
+  it('nettoie la clé historique à la relance quand le marqueur est posé', async () => {
+    const s0 = await freshStore()
+    localStorage.setItem(LEGACY_KEY, JSON.stringify(legacyList()))
+    await relaunch().then((s) => s.loadTickets())
+    expect(localStorage.getItem(LEGACY_KEY)).toBeNull()
+    localStorage.setItem(LEGACY_KEY, JSON.stringify(legacyList())) // résidu
+    expect(s0).toBeTruthy()
+    const s = await relaunch()
+    expect((await s.loadTickets()).map((t) => t.id).sort()).toEqual(['t1', 't2']) // pas de doublon
+    expect(localStorage.getItem(LEGACY_KEY)).toBeNull()
+  })
+})

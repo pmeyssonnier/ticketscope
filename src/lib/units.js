@@ -42,7 +42,11 @@ export function parseFormat(label) {
   if (!s.trim()) return null
 
   // Vendu au poids / au litre (contenance de l'exemplaire inconnue).
-  if (/\bvrac\b|au poids|\/\s?kg|\/\s?l\b/.test(s)) {
+  // Au litre (« /L », « au litre ») : volume ; sinon au poids (« /kg », « vrac »).
+  if (/\/\s?l\b|au litre/.test(s)) {
+    return { text: 'vrac', base: 'L', baseQty: null, saleType: 'volume' }
+  }
+  if (/\bvrac\b|au poids|\/\s?kg/.test(s)) {
     return { text: 'vrac', base: 'kg', baseQty: null, saleType: 'weight' }
   }
 

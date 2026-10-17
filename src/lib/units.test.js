@@ -67,3 +67,19 @@ describe('prix unitaire — montants négatifs', () => {
     expect(unitPrice(2.5, 1, '1 kg')).toEqual({ value: 2.5, label: '€/kg' })
   })
 })
+
+describe('vrac au litre (audit P2)', () => {
+  it('« /L » et « au litre » : volume, pas poids', () => {
+    expect(parseFormat('HUILE OLIVE /L')).toMatchObject({ text: 'vrac', base: 'L', saleType: 'volume', baseQty: null })
+    expect(parseFormat('JUS D ORANGE AU LITRE')).toMatchObject({ base: 'L', saleType: 'volume' })
+    expect(parseFormat('VRAC VINAIGRE / L')).toMatchObject({ base: 'L' })
+  })
+  it('« /kg », « au poids », « vrac » : poids', () => {
+    expect(parseFormat('POMMES /KG')).toMatchObject({ base: 'kg', saleType: 'weight' })
+    expect(parseFormat('FROMAGE AU POIDS')).toMatchObject({ base: 'kg' })
+    expect(parseFormat('NOIX VRAC')).toMatchObject({ base: 'kg' })
+  })
+  it('un format en litres reste un volume avec contenance', () => {
+    expect(parseFormat('EAU 1,5 L')).toMatchObject({ base: 'L', baseQty: 1.5 })
+  })
+})

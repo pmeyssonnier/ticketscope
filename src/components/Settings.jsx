@@ -1,13 +1,7 @@
-import React, { useEffect, useState } from 'react'
-import { secretStorageKind } from '../lib/secretStore.js'
+import React from 'react'
 
 // Panneau de réglages (modal) : moteur de lecture, modèle IA, clé API.
-export default function Settings({ ai, updateAi, onClose }) {
-  // Le mode de stockage est connu une fois la clé lue/écrite ; on le relit à chaque frappe.
-  const [keyKind, setKeyKind] = useState(secretStorageKind())
-  useEffect(() => {
-    setKeyKind(secretStorageKind())
-  }, [ai.apiKey])
+export default function Settings({ ai, updateAi, keyKind, onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -59,9 +53,11 @@ export default function Settings({ ai, updateAi, onClose }) {
           Anthropic. Créez-en une sur <b>console.anthropic.com</b> (avec une limite de dépense).
         </p>
         <p className="inline-note">
-          {keyKind === 'encrypted'
-            ? '🔒 Clé chiffrée sur cet appareil (clé non exportable du navigateur).'
-            : '⚠️ Ce navigateur ne permet pas le chiffrement : la clé est stockée en clair sur cet appareil.'}
+          {keyKind === 'encrypted' && '🔒 Clé chiffrée sur cet appareil (clé non exportable du navigateur).'}
+          {keyKind === 'memory' &&
+            '⚠️ La clé n’a pas pu être conservée (chiffrement indisponible ou stockage plein) : elle reste en mémoire jusqu’à la fermeture de l’application et devra être ressaisie.'}
+          {keyKind === 'legacy' &&
+            '⚠️ Ce navigateur ne permet pas le chiffrement : la clé reste dans l’ancien emplacement, en clair.'}
         </p>
         <p className="inline-note">
           ⚠️ En mode <b>✨ IA</b>, l'image du ticket est <b>envoyée à l'API Anthropic</b> (elle

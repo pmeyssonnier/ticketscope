@@ -107,19 +107,20 @@ const RECEIPT_SCHEMA = {
   },
 }
 
-function buildPrompt() {
+export function buildPrompt() {
   const list = COICOP_CODES.map((c) => `- ${c} : ${COICOP_LABELS[c]}`).join('\n')
   return `Tu es un expert des tickets de caisse belges. Lis ce ticket et renvoie ses lignes de PRODUITS.
 
 Consignes :
-- Ignore l'en-tête (enseigne, adresse, TVA, téléphone, n° de ticket, caisse, caissier), les totaux, les remises globales du récapitulatif, les moyens de paiement et les codes (POI...).
+- Ignore l'en-tête (enseigne, adresse, TVA, téléphone, n° de ticket, caisse, caissier), les totaux, les moyens de paiement et les codes (POI...).
 - Regroupe les lignes de produit strictement identiques (même libellé, même prix) en une seule avec "quantity" = nombre d'exemplaires.
 - "raw" = libellé exact imprimé sur le ticket. "product" = nom normalisé lisible en français. "brand" = marque si identifiable, sinon "".
 - "format" = contenance d'UN exemplaire telle qu'imprimée : poids ("750 g", "1 kg"), volume ("880 ml", "1 L", "37,5 cl"), ou nombre ("12 pièces"). Mets "vrac" si vendu au poids, "" si aucune contenance.
 - Vêtements et chaussures : le libellé est souvent un nom de modèle suivi de la couleur et de la taille (« DAXFORDMC BLUE,XXL »). Garde-le tel quel dans "raw" ; dans "product", indique le type d'article s'il se déduit (boxer, chemise, pull…), sinon le nom du modèle.
 - Rattache une réduction "sur article" au produit concerné : "discount" est négatif, "net" = quantity×unit_price + discount.
 - Promotion de lot (ex. « Boxers 3 x 19,99EUR = -3,98 » : un libellé suivi d'un montant NÉGATIF) : ce n'est PAS un produit. Ne la mets JAMAIS dans "items" ; décris-la dans "promotions" avec "label" (libellé imprimé), "amount" (négatif, tel qu'imprimé) et "item_numbers" (rang, à partir de 1, dans "items", des articles concernés, p. ex. ceux marqués « a »). Chaque article concerné garde SON propre prix imprimé (7,99), jamais le prix du lot, et n'a pas de "discount" pour cette promotion.
-- Contrôle final : la somme des "net" de toutes les lignes doit être égale à "total_paid".
+- Remise globale du récapitulatif (coupon, carte de fidélité…) qui n'est rattachée à aucun article : mets-la aussi dans "promotions", avec "item_numbers": [] (sans doublon avec une remise déjà rattachée à un article ou une promotion de lot).
+- Contrôle final : la somme des "net" des "items" PLUS la somme des "amount" des "promotions" doit être égale à "total_paid", à quelques centimes d'arrondi près. Si l'écart est plus grand, relis les prix imprimés plutôt que d'inventer un ajustement.
 - Attribue le code COICOP le plus adapté depuis CETTE liste (n'invente pas d'autre code ; si vraiment inconnu, mets "") et une "category" courte en français :
 ${list}
 - "confidence" entre 0 et 1 : ta certitude sur la lecture ET la classification de la ligne.
