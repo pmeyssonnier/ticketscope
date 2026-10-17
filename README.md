@@ -278,6 +278,8 @@ par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.9.2** — mode IA : consigne corrigée pour ne plus nommer tous les articles d'après
+  une promotion de lot (« Boxers 3 x 19,99EUR ») ni recopier son prix sur un article.
 - **2.9.1** — la feuille *Synthèse COICOP* de l'export Excel est regroupée **par code**
   (une ligne par code ; les catégories distinctes sont réunies avec « / »).
 - **2.9** — **repli par règles** pour le classement local : un produit absent du
