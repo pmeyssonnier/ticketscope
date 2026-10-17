@@ -2,6 +2,8 @@
 // unitaire normalisé (€/kg, €/L, €/pièce) — utile pour l'analyse type Enquête
 // sur le Budget des Ménages (Statbel) et le comparateur de prix.
 
+import { roundMoney } from './money.js'
+
 // Unités reconnues, du token le plus long au plus court (l'ordre compte dans
 // l'alternance regex : « ml » avant « l », « kg » avant « g »).
 const UNIT_RE =
@@ -102,7 +104,7 @@ export function unitPrice(net, quantity, format) {
   if (!f || f.baseQty == null || net == null || Number(net) <= 0) return null
   const totalBase = f.baseQty * (Number(quantity) || 1)
   if (!totalBase) return null
-  return { value: +(net / totalBase).toFixed(2), label: `€/${f.base}` }
+  return { value: roundMoney(net / totalBase), label: `€/${f.base}` }
 }
 
 // Raccourci pour un article {net, quantity, format}.

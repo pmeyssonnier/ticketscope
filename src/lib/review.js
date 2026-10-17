@@ -1,6 +1,7 @@
 // Logique pure de l'écran de correction (partagée par le tableau et les fiches).
 
 import { REVIEW_THRESHOLD } from './classifier.js'
+import { mulMoney, sumMoney, diffMoney, sameMoney } from './money.js'
 
 // Une ligne est « à confirmer » si elle n'est pas classée, si la confiance de
 // classement est faible, ou si la confiance de LECTURE (OCR / IA) est faible.
@@ -17,24 +18,24 @@ export function computeNeedsReview(it) {
 export function recomputeAmounts(it) {
   const q = Number(it.quantity) || 0
   const up = Number(it.unitPrice) || 0
-  const gross = +(q * up).toFixed(2)
-  return { ...it, gross, net: +(gross + (Number(it.discount) || 0)).toFixed(2) }
+  const gross = mulMoney(q, up)
+  return { ...it, gross, net: sumMoney([gross, Number(it.discount) || 0]) }
 }
 
 // Synthèse affichée en permanence : total recalculé, écart avec le total du ticket.
 export function reviewSummary(items, globalDiscountTotal, declared) {
-  const gross = +items.reduce((a, b) => a + (Number(b.gross) || 0), 0).toFixed(2)
-  const discount = +items.reduce((a, b) => a + (Number(b.discount) || 0), 0).toFixed(2)
-  const net = +(gross + discount + (Number(globalDiscountTotal) || 0)).toFixed(2)
+  const gross = sumMoney(items.map((b) => Number(b.gross) || 0))
+  const discount = sumMoney(items.map((b) => Number(b.discount) || 0))
+  const net = sumMoney([gross, discount, Number(globalDiscountTotal) || 0])
   const hasDeclared = declared != null
-  const diff = hasDeclared ? +(net - declared).toFixed(2) : null
+  const diff = hasDeclared ? diffMoney(net, declared) : null
   return {
     gross,
     discount,
     net,
     declared: hasDeclared ? declared : null,
     diff,
-    reconciled: hasDeclared && Math.abs(diff) < 0.02,
+    reconciled: hasDeclared && sameMoney(net, declared, 1), // tolérance : 1 centime d'arrondi
     reviewCount: items.filter((it) => it.needsReview).length,
   }
 }

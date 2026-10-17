@@ -4,6 +4,7 @@
 
 import { monthKey } from './format.js'
 import { unitPriceFor } from './units.js'
+import { sumMoney } from './money.js'
 
 // Neutralise l'injection de formule (Excel/LibreOffice) : une cellule texte
 // commençant par = + - @ (ou tab/CR) serait interprétée comme une formule.
@@ -59,7 +60,7 @@ export function summarizeByCoicop(tickets) {
       _cats: new Set(),
     }
     if (r.categorie) cur._cats.add(r.categorie)
-    cur.net = +(cur.net + (Number(r.net) || 0)).toFixed(2)
+    cur.net = sumMoney([cur.net, Number(r.net) || 0])
     cur.lignes += 1
     map.set(r.coicop, cur)
   }
@@ -113,7 +114,7 @@ export async function exportXLSX(tickets) {
     date: t.date || '',
     magasin: safeCell(t.store || ''),
     nb_lignes: (t.items || []).length,
-    total_net: +(t.items || []).reduce((a, b) => a + (Number(b.net) || 0), 0).toFixed(2),
+    total_net: sumMoney((t.items || []).map((b) => Number(b.net) || 0)),
     total_declare: t.totalDeclared ?? '',
   }))
 
