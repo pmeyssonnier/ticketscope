@@ -25,4 +25,18 @@ describe('export : confiance de lecture', () => {
     expect(rows[0]).toMatchObject({ confiance: 0.9, confiance_lecture: 0.6 })
     expect(rows[1]).toMatchObject({ confiance: 0.8, confiance_lecture: '' })
   })
+
+  it('regroupe par code COICOP même si les catégories diffèrent', () => {
+    const s = summarizeByCoicop([{ items: [
+      { raw: 'a', coicop: '01.1.1', category: 'Pain', net: 2 },
+      { raw: 'b', coicop: '01.1.1', category: 'Viennoiserie', net: 3 },
+      { raw: 'c', coicop: '01.1.1', category: 'Pain', net: 1 },
+      { raw: 'd', coicop: '03.1.2', category: 'Vêtements', net: 10 },
+    ] }])
+    expect(s).toHaveLength(2)
+    const pain = s.find((r) => r.coicop === '01.1.1')
+    expect(pain.net).toBe(6)
+    expect(pain.lignes).toBe(3)
+    expect(pain.categorie).toBe('Pain / Viennoiserie')
+  })
 })

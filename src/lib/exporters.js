@@ -45,23 +45,27 @@ export function flattenRows(tickets) {
   return rows
 }
 
-// Synthèse par code COICOP + catégorie (comme la feuille "Synthèse" de référence).
+// Synthèse par code COICOP : une ligne par code, quelle que soit la catégorie.
+// Les catégories distinctes rencontrées pour un code sont réunies avec « / ».
 export function summarizeByCoicop(tickets) {
   const map = new Map()
   for (const r of flattenRows(tickets)) {
-    const key = `${r.coicop}|${r.categorie}`
-    const cur = map.get(key) || {
+    const cur = map.get(r.coicop) || {
       coicop: r.coicop,
       coicop_libelle: r.coicop_libelle,
-      categorie: r.categorie,
+      categorie: '',
       net: 0,
       lignes: 0,
+      _cats: new Set(),
     }
+    if (r.categorie) cur._cats.add(r.categorie)
     cur.net = +(cur.net + (Number(r.net) || 0)).toFixed(2)
     cur.lignes += 1
-    map.set(key, cur)
+    map.set(r.coicop, cur)
   }
-  return [...map.values()].sort((a, b) => b.net - a.net)
+  return [...map.values()]
+    .map(({ _cats, ...row }) => ({ ...row, categorie: [..._cats].join(' / ') }))
+    .sort((a, b) => b.net - a.net)
 }
 
 export function download(filename, blob) {
