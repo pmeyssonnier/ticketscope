@@ -56,6 +56,19 @@ export default function App() {
     }
   }, [])
 
+  // Hauteur réelle de la barre de navigation : les barres collantes (écran de
+  // correction) se posent juste au-dessus.
+  useEffect(() => {
+    const nav = document.querySelector('nav.nav')
+    if (!nav) return undefined
+    const apply = () => document.documentElement.style.setProperty('--nav-h', `${Math.ceil(nav.getBoundingClientRect().height)}px`)
+    apply()
+    if (typeof ResizeObserver === 'undefined') return undefined
+    const ro = new ResizeObserver(apply)
+    ro.observe(nav)
+    return () => ro.disconnect()
+  }, [])
+
   // Exécute une écriture puis recharge la liste ; signale l'échec à l'utilisateur.
   async function persist(write) {
     try {

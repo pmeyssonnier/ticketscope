@@ -1,12 +1,21 @@
 import React from 'react'
 import { formatPct } from '../lib/format.js'
 
-export function ConfidenceBadge({ value }) {
+// Deux notions distinctes : la confiance de LECTURE (OCR / IA : a-t-on bien lu le
+// libellé et les montants ?) et la confiance de CLASSEMENT (COICOP).
+const CONF_KINDS = {
+  read: { label: 'Lecture', title: 'Confiance de la lecture (OCR / IA) : libellé et montants bien lus ?' },
+  class: { label: 'Classement', title: 'Confiance du classement COICOP : bon code produit ?' },
+}
+
+export function ConfidenceBadge({ value, kind }) {
   const level = value >= 0.85 ? 'high' : value >= 0.75 ? 'mid' : 'low'
   const icon = level === 'high' ? '●' : level === 'mid' ? '◐' : '○'
+  const k = CONF_KINDS[kind]
   return (
-    <span className={`conf ${level}`} title="Taux de confiance de la classification">
-      {icon} {formatPct(value)}
+    <span className={`conf ${level}`} title={k ? k.title : 'Taux de confiance de la classification'}>
+      {icon} {k ? `${k.label} ` : ''}
+      {formatPct(value)}
     </span>
   )
 }
