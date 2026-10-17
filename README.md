@@ -151,7 +151,8 @@ suivantes.
 Aucune donnée personnelle n'est transmise : tickets, produits et corrections
 sont conservés uniquement dans le stockage local du navigateur : les tickets dans
 IndexedDB (migrés automatiquement depuis l'ancien `localStorage`, avec repli sur
-`localStorage` si IndexedDB est indisponible), la base apprise et les réglages dans `localStorage`.
+`localStorage` si IndexedDB est indisponible), la base apprise et les réglages dans `localStorage`, et la clé API Anthropic chiffrée
+(AES-GCM, clé d'appareil non exportable) dans une base IndexedDB à part.
 
 ## Feuille de route
 

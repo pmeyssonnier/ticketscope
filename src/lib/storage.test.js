@@ -66,4 +66,12 @@ describe('réglages IA', () => {
     localStorage.setItem('ticketscope.ai.v1', JSON.stringify({ model: 'inconnu' }))
     expect(loadAiSettings().model).toBe('claude-haiku-4-5')
   })
+  it('n\'expose ni n\'écrit jamais la clé API', async () => {
+    const { loadAiSettings, saveAiSettings } = await import('./storage.js')
+    localStorage.setItem('ticketscope.ai.v1', JSON.stringify({ engine: 'claude', apiKey: 'sk-ant-secret' }))
+    expect(loadAiSettings()).not.toHaveProperty('apiKey')
+    saveAiSettings({ model: 'claude-sonnet-5', apiKey: 'sk-ant-autre' })
+    expect(localStorage.getItem('ticketscope.ai.v1')).not.toMatch(/sk-ant/)
+    expect(loadAiSettings()).toMatchObject({ engine: 'claude', model: 'claude-sonnet-5' })
+  })
 })

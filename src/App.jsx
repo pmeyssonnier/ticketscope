@@ -9,6 +9,7 @@ import {
   loadAiSettings,
   saveAiSettings,
 } from './lib/storage.js'
+import { loadApiKey, saveApiKey } from './lib/secretStore.js'
 
 // Le tableau de bord embarque recharts (~350 ko) : chargé à la demande.
 const Dashboard = lazy(() => import('./components/Dashboard.jsx'))
@@ -23,7 +24,8 @@ export default function App() {
   const [tickets, setTickets] = useState([])
   const [draft, setDraft] = useState(null)
   const [view, setView] = useState('import')
-  const [ai, setAi] = useState(() => loadAiSettings())
+  // La clé API vit en mémoire ; elle est chiffrée au repos (secretStore.js).
+  const [ai, setAi] = useState(() => ({ ...loadAiSettings(), apiKey: '' }))
   const [settingsOpen, setSettingsOpen] = useState(false)
   // Vue de retour après enregistrement/annulation d'une correction :
   // tableau de bord après un import, historique après l'édition d'un ticket.
@@ -32,6 +34,16 @@ export default function App() {
   useEffect(() => {
     let alive = true
     loadTickets().then((list) => alive && setTickets(list)).catch(console.error)
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let alive = true
+    loadApiKey()
+      .then((key) => alive && key && setAi((a) => (a.apiKey ? a : { ...a, apiKey: key })))
+      .catch(console.error)
     return () => {
       alive = false
     }
@@ -51,7 +63,10 @@ export default function App() {
   }
 
   function updateAi(patch) {
-    setAi(saveAiSettings(patch))
+    const { apiKey, ...rest } = patch
+    if (Object.keys(rest).length) saveAiSettings(rest)
+    if (apiKey !== undefined) saveApiKey(apiKey)
+    setAi((a) => ({ ...a, ...patch }))
   }
 
   function handleDraft(d) {
