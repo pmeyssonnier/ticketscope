@@ -45,7 +45,17 @@ en option, qui envoie l'image du ticket à l'API Anthropic (voir plus bas).
 - ✏️ **Écran de correction** : produit, quantité, prix, remise, format, code
   COICOP, catégorie. Chaque correction **enrichit la base** (auto-apprentissage
   local). Les lignes « à confirmer » se filtrent d'un clic ; on peut ajouter une
-  ligne manquante à la main.
+  ligne manquante à la main. **Sur téléphone**, les lignes sont des **fiches**
+  (champs étiquetés, sans défilement horizontal) et une **barre collante** au-dessus
+  de la navigation affiche en permanence l'écart entre le total du ticket et le
+  total recalculé, le nombre de lignes à confirmer et le bouton Enregistrer ; sur
+  grand écran, le tableau est conservé.
+- 🎯 **Deux confiances distinctes** par ligne : **lecture** (le libellé et les
+  montants ont-ils été bien lus ? score par ligne de l'OCR Tesseract, ou
+  certitude de l'IA) et **classement** (bon code COICOP ?). Une ligne est « à
+  confirmer » si l'une des deux est faible ; modifier la ligne ou toucher
+  « Lecture vérifiée » confirme la lecture. Un texte collé ou un PDF numérique n'a
+  pas de score de lecture (texte exact).
 - 🔎 **Contrôle de cohérence** : total recalculé vs total payé du ticket.
 
 ### Suivi et exports
@@ -107,6 +117,7 @@ npm run build      # build de production dans dist/
 npm run preview    # sert le build de production
 npm test           # tests unitaires (Vitest)
 npm run e2e        # tests de bout en bout sur téléphone émulé (Playwright)
+npm run eval       # précision du pipeline local sur un jeu de tickets annotés
 ```
 
 Les tests de bout en bout construisent l'application, la servent avec les en-têtes
@@ -168,14 +179,18 @@ src/
     ticketStore.js   Tickets enregistrés (IndexedDB, repli localStorage, migration)
     secretStore.js   Clé API Anthropic chiffrée (WebCrypto, clé d'appareil non exportable)
     storage.js       Base apprise et réglages (localStorage)
+    review.js        Logique pure de l'écran de correction (à confirmer, totaux, écart)
+    readConfidence.js Confiance de lecture par ligne (scores OCR rattachés aux lignes)
+    useMediaQuery.js Hook : fiches (téléphone) ou tableau (grand écran)
     backup.js        Sauvegarde / restauration : validation stricte, plan d'import, rappel
     saveFlow.js      Enregistrement d'un ticket corrigé : ticket d'abord, apprentissage ensuite
     exporters.js     Exports Excel / CSV / JSON
     xlsxWriter.js    Écriture .xlsx maison (sans dépendance de lecture)
     *.test.js        Tests unitaires de chaque module
-  components/        Interface React (Import, Correction, Tableau de bord,
-                     Historique, Comparaison, Réglages)
+  components/        Interface React (Import, Correction — tableau et fiches —,
+                     Tableau de bord, Historique, Comparaison, Réglages)
 e2e/                 Tests de bout en bout (Playwright, téléphone émulé)
+eval/                Jeu de tickets annotés et suivi de précision (npm run eval)
 playwright.config.js Configuration des tests de bout en bout
 scripts/
   prepare-ocr.mjs    Copie le moteur Tesseract (worker + WASM) dans public/tesseract/
@@ -216,6 +231,21 @@ entrées apprises, stockées localement, prioritaires lors des classifications
 suivantes. En mode IA, la liste des codes COICOP du référentiel est imposée au
 modèle (le schéma JSON de la réponse l'énumère).
 
+### Suivi de précision (`npm run eval`)
+
+`eval/` contient un jeu de tickets annotés et un script qui mesure ce que le
+pipeline **local** fait d'un texte de ticket, avec 0 / 3 / 6 % de bruit de type
+OCR : lignes retrouvées, montants exacts, bon code COICOP, couverture, erreurs
+signalées « à confirmer » et **calibration de la confiance**. `npm test` rejoue ces
+mesures avec des seuils (« cliquet ») : une régression fait échouer les tests.
+Premières mesures : lignes et montants retrouvés à 100 % (jusqu'à 6 % de bruit) ;
+sur le ticket d'exemple, 96 % d'accord avec les codes de l'IA ; **les codes à
+confiance haute sont justes à 96 %, ceux à confiance basse à 8 %**. Le dictionnaire
+local reste centré sur le ticket d'exemple : il ne classe aucune des lignes d'un
+ticket d'habillement synthétique et 13 % d'un ticket de courses synthétique. Les
+codes de référence du ticket d'exemple viennent de l'IA et **ne sont pas validés
+par un humain** (voir `eval/README.md`).
+
 ## Vie privée et sécurité
 
 - **Aucun serveur** : tickets, produits et corrections restent dans le
@@ -248,6 +278,11 @@ modèle (le schéma JSON de la réponse l'énumère).
 
 ## Nouveautés récentes
 
+- **2.8** — écran de correction en **fiches sur téléphone** avec barre d'écart
+  collante ; **confiance de lecture** séparée de la confiance de classement
+  (OCR, IA, export, sauvegarde) ; **suivi de précision** sur un jeu annoté
+  (`npm run eval`) ; tests de bout en bout des fiches et de la **mise à jour du
+  service worker** ; lacets et semelles suggèrent les chaussures.
 - **2.7.1** — corrections issues de la revue de code : migration des tickets
   idempotente ; clé API jamais écrite en clair (mode dégradé en mémoire, erreurs
   signalées, ancienne clé supprimée seulement après confirmation) ; import des
