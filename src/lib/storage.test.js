@@ -56,12 +56,14 @@ describe('exportLearnedData', () => {
   })
 })
 
-describe('réglages IA (migration modèle)', () => {
-  it('remplace un ancien modèle par le modèle courant', async () => {
+describe('réglages IA', () => {
+  it('conserve un modèle connu et remplace un modèle inconnu', async () => {
     const { loadAiSettings } = await import('./storage.js')
     localStorage.setItem('ticketscope.ai.v1', JSON.stringify({ model: 'claude-haiku-4-5' }))
-    expect(loadAiSettings().model).toBe('claude-haiku-5-5')
-    localStorage.setItem('ticketscope.ai.v1', JSON.stringify({ model: 'claude-sonnet-5' }))
+    expect(loadAiSettings().model).toBe('claude-haiku-4-5')
+    localStorage.setItem('ticketscope.ai.v1', JSON.stringify({ model: 'claude-sonnet-5-5' }))
     expect(loadAiSettings().model).toBe('claude-sonnet-5-5')
+    localStorage.setItem('ticketscope.ai.v1', JSON.stringify({ model: 'inconnu' }))
+    expect(loadAiSettings().model).toBe('claude-haiku-4-5')
   })
 })
