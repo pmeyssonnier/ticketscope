@@ -16,6 +16,7 @@ import { loadTickets, saveTicket } from './ticketStore.js'
 import { loadLearned, mergeLearned } from './storage.js'
 
 export const BACKUP_VERSION = 1
+export const REMINDER_DAYS = 30
 
 export function buildBackup({ tickets, learned, appVersion = '' }) {
   return {
@@ -244,4 +245,20 @@ export function describeImport(r) {
   }
   if (r.learned) parts.push(`dictionnaire : ${r.learned.added} ajout(s), ${r.learned.updated} mise(s) à jour`)
   return `✓ Import terminé : ${parts.join(', ')}.`
+}
+
+// Rappel de sauvegarde (les sauvegardes sont manuelles : les données vivent dans
+// le navigateur et peuvent disparaître). Renvoie null s'il n'y a rien à protéger,
+// sinon { level: 'ok' | 'warn', text }.
+export function backupReminder(lastIso, ticketCount, now = new Date()) {
+  if (!ticketCount) return null
+  const last = lastIso ? Date.parse(lastIso) : NaN
+  if (Number.isNaN(last)) {
+    return { level: 'warn', text: `Aucune sauvegarde exportée depuis cet appareil : vos ${ticketCount} ticket(s) n'existent que dans ce navigateur. Pensez à sauvegarder.` }
+  }
+  const days = Math.max(0, Math.floor((now.getTime() - last) / 86400000))
+  if (days >= REMINDER_DAYS) {
+    return { level: 'warn', text: `Dernière sauvegarde il y a ${days} jours : pensez à en refaire une.` }
+  }
+  return { level: 'ok', text: days === 0 ? "Dernière sauvegarde : aujourd'hui." : `Dernière sauvegarde : il y a ${days} jour${days > 1 ? 's' : ''}.` }
 }

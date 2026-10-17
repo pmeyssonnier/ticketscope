@@ -75,3 +75,27 @@ describe('réglages IA', () => {
     expect(loadAiSettings()).toMatchObject({ engine: 'claude', model: 'claude-sonnet-5' })
   })
 })
+
+describe('learnFromCorrection : résultat d\'écriture (audit P2)', () => {
+  it('renvoie true quand c\'est écrit ou quand il n\'y a rien à apprendre', async () => {
+    const { learnFromCorrection, loadLearned } = await import('./storage.js')
+    expect(learnFromCorrection('LAIT 1L', { coicop: '01.1.4', normalized: 'Lait' })).toBe(true)
+    expect(loadLearned()).toHaveLength(1)
+    expect(learnFromCorrection('', { coicop: '01.1.4' })).toBe(true)
+    expect(learnFromCorrection('X', { normalized: 'sans coicop' })).toBe(true)
+    expect(loadLearned()).toHaveLength(1)
+  })
+  it('renvoie false si localStorage refuse l\'écriture', async () => {
+    const { learnFromCorrection } = await import('./storage.js')
+    const real = globalThis.localStorage
+    globalThis.localStorage = { ...real, getItem: real.getItem, setItem: () => { throw new Error('quota') } }
+    expect(learnFromCorrection('PAIN', { coicop: '01.1.1' })).toBe(false)
+    globalThis.localStorage = real
+  })
+  it('mémorise la date de dernière sauvegarde', async () => {
+    const { loadLastBackup, markBackupDone } = await import('./storage.js')
+    expect(loadLastBackup()).toBeNull()
+    markBackupDone(new Date('2026-10-17T12:00:00Z'))
+    expect(loadLastBackup()).toBe('2026-10-17T12:00:00.000Z')
+  })
+})

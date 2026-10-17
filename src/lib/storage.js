@@ -7,6 +7,7 @@ import { AI_MODELS } from './claudeVision.js'
 
 const LEARNED_KEY = 'ticketscope.learned.v1'
 const AI_KEY = 'ticketscope.ai.v1'
+const LAST_BACKUP_KEY = 'ticketscope.lastBackup.v1'
 
 function read(key, fallback) {
   try {
@@ -17,11 +18,14 @@ function read(key, fallback) {
   }
 }
 
+// true si l'écriture a réellement eu lieu.
 function write(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value))
+    return true
   } catch (e) {
     console.error('TicketScope: échec de sauvegarde locale', e)
+    return false
   }
 }
 
@@ -33,10 +37,12 @@ export function loadLearned() {
 
 // Enregistre une correction : le libellé brut -> produit/COICOP corrigés.
 // Enrichit la base pour les prochains tickets (auto-apprentissage).
+// Renvoie false seulement si l'écriture a échoué (true sinon, y compris quand
+// la correction n'a rien à apprendre).
 export function learnFromCorrection(rawLabel, correction) {
-  if (!rawLabel || !correction || !correction.coicop) return
+  if (!rawLabel || !correction || !correction.coicop) return true
   const key = normalizeStr(rawLabel)
-  if (!key) return
+  if (!key) return true
   const list = loadLearned()
   const entry = {
     id: uid('learn'),
@@ -49,7 +55,7 @@ export function learnFromCorrection(rawLabel, correction) {
   const idx = list.findIndex((e) => (e.keywords || []).includes(key))
   if (idx >= 0) list[idx] = { ...list[idx], ...entry, id: list[idx].id }
   else list.push(entry)
-  write(LEARNED_KEY, list)
+  return write(LEARNED_KEY, list)
 }
 
 export function clearLearned() {
@@ -128,4 +134,14 @@ export function mergeLearned(data) {
   }
   write(LEARNED_KEY, list)
   return { added, updated, skipped }
+}
+
+// --- Date de la dernière sauvegarde complète exportée (pour le rappel) ---
+export function loadLastBackup() {
+  const v = read(LAST_BACKUP_KEY, null)
+  return typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? v : null
+}
+
+export function markBackupDone(date = new Date()) {
+  write(LAST_BACKUP_KEY, date.toISOString())
 }

@@ -4,6 +4,7 @@ import ReviewTable from './components/ReviewTable.jsx'
 import History from './components/History.jsx'
 import Settings from './components/Settings.jsx'
 import { loadTickets, saveTicket, deleteTicket } from './lib/ticketStore.js'
+import { saveTicketThenLearn } from './lib/saveFlow.js'
 import {
   learnFromCorrection,
   loadAiSettings,
@@ -95,9 +96,16 @@ export default function App() {
   }
 
   async function handleSave(ticket, corrections) {
-    for (const c of corrections) learnFromCorrection(c.raw, c.correction)
-    // En cas d'échec on reste sur l'écran de correction pour ne rien perdre.
-    if (!(await persist(() => saveTicket(ticket)))) return
+    // Ticket d'abord, apprentissage ensuite : si l'enregistrement échoue, on reste
+    // sur l'écran de correction et la base apprise n'est pas modifiée.
+    let learnFailed = 0
+    const saved = await persist(async () => {
+      ;({ learnFailed } = await saveTicketThenLearn(ticket, corrections, { save: saveTicket, learn: learnFromCorrection }))
+    })
+    if (!saved) return
+    if (learnFailed) {
+      alert("Ticket enregistré, mais le dictionnaire appris n'a pas pu être mis à jour (espace de stockage plein ?).")
+    }
     setDraft(null)
     setView(draftReturn)
   }

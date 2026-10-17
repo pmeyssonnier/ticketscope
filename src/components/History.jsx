@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { formatEUR, formatDate, normalizeStr } from '../lib/format.js'
 import { exportCSV, exportJSON, exportXLSX, download } from '../lib/exporters.js'
-import { currentBackup, backupFilename, planImport, applyImport, describePlan, describeImport } from '../lib/backup.js'
-import { loadLearned, exportLearnedData, mergeLearned, clearLearned } from '../lib/storage.js'
+import { currentBackup, backupFilename, planImport, applyImport, describePlan, describeImport, backupReminder } from '../lib/backup.js'
+import { loadLearned, exportLearnedData, mergeLearned, clearLearned, loadLastBackup, markBackupDone } from '../lib/storage.js'
 import { ticketEngine, engineLabel } from '../lib/compare.js'
 import Compare from './Compare.jsx'
 import { ConfidenceBadge, Empty } from './ui.jsx'
@@ -12,7 +12,9 @@ import { ConfidenceBadge, Empty } from './ui.jsx'
 function BackupManager({ ticketCount, onReload, status, setStatus }) {
   const [busy, setBusy] = useState(false)
   const [plan, setPlan] = useState(null) // aperçu d'import en attente de confirmation
+  const [lastBackup, setLastBackup] = useState(() => loadLastBackup())
   const fileRef = useRef(null)
+  const reminder = backupReminder(lastBackup, ticketCount)
 
   async function doExport() {
     setBusy(true)
@@ -20,6 +22,8 @@ function BackupManager({ ticketCount, onReload, status, setStatus }) {
       const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : ''
       const backup = await currentBackup(version)
       download(backupFilename(), new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }))
+      markBackupDone()
+      setLastBackup(loadLastBackup())
       setStatus(`✓ Sauvegarde exportée : ${backup.tickets.length} ticket(s), ${backup.learned.length} entrée(s) du dictionnaire.`)
     } catch (e) {
       console.error(e)
@@ -80,6 +84,12 @@ function BackupManager({ ticketCount, onReload, status, setStatus }) {
         l'import, les tickets déjà présents ne sont pas écrasés ; les anciens exports JSON des
         tickets sont acceptés.
       </p>
+      {reminder && (
+        <p className="inline-note" role="note" style={reminder.level === 'warn' ? { color: '#b45309' } : undefined}>
+          {reminder.level === 'warn' ? '⚠️ ' : '✓ '}
+          {reminder.text}
+        </p>
+      )}
       <div className="btn-row">
         <button className="btn primary" onClick={doExport} disabled={busy}>
           💾 Sauvegarder (.json)

@@ -212,3 +212,28 @@ describe('nom de fichier', () => {
     expect(d.backup.backupFilename(new Date('2026-10-17T12:00:00Z'))).toBe('ticketscope-sauvegarde-2026-10-17.json')
   })
 })
+
+describe('rappel de sauvegarde (audit)', () => {
+  const now = new Date('2026-10-17T12:00:00Z')
+  it('rien à protéger sans ticket', async () => {
+    const d = await device()
+    expect(d.backup.backupReminder(null, 0, now)).toBeNull()
+  })
+  it('jamais sauvegardé : avertissement', async () => {
+    const d = await device()
+    expect(d.backup.backupReminder(null, 5, now)).toMatchObject({ level: 'warn' })
+    expect(d.backup.backupReminder('pas une date', 5, now).level).toBe('warn')
+  })
+  it('sauvegarde récente : OK, avec le nombre de jours', async () => {
+    const d = await device()
+    expect(d.backup.backupReminder('2026-10-17T08:00:00Z', 5, now)).toEqual({ level: 'ok', text: "Dernière sauvegarde : aujourd'hui." })
+    expect(d.backup.backupReminder('2026-10-16T08:00:00Z', 5, now).text).toBe('Dernière sauvegarde : il y a 1 jour.')
+    expect(d.backup.backupReminder('2026-10-10T08:00:00Z', 5, now).text).toBe('Dernière sauvegarde : il y a 7 jours.')
+  })
+  it('ancienne sauvegarde (30 jours) : avertissement', async () => {
+    const d = await device()
+    const r = d.backup.backupReminder('2026-09-10T08:00:00Z', 5, now)
+    expect(r.level).toBe('warn')
+    expect(r.text).toMatch(/il y a 37 jours/)
+  })
+})
