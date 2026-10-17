@@ -5,8 +5,9 @@ import { classifyItems } from '../lib/classifier.js'
 import { loadLearned } from '../lib/storage.js'
 import { uid } from '../lib/format.js'
 import { extractText, extractTextMulti } from '../lib/ocr.js'
-import { readReceiptWithClaude } from '../lib/claudeVision.js'
+import { readReceiptWithClaude, AI_MODELS } from '../lib/claudeVision.js'
 import { parseFormat } from '../lib/units.js'
+import { attachReadConfidence } from '../lib/readConfidence.js'
 
 export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
   const [text, setText] = useState('')
@@ -23,12 +24,13 @@ export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
   const pdfRef = useRef(null)
   const txtRef = useRef(null)
 
-  function analyze(source) {
+  // ocrLines : lignes OCR avec leur score (absent pour un texte collé ou un PDF numérique).
+  function analyze(source, ocrLines) {
     const input = (source ?? text).trim()
     if (!input) return
     const parsed = parseTicket(input)
     const learned = loadLearned()
-    const items = classifyItems(parsed.items, learned).map((it) => ({
+    const items = attachReadConfidence(classifyItems(parsed.items, learned), ocrLines).map((it) => ({
       ...it,
       id: uid('it'),
       format: parseFormat(it.raw)?.text || '',
@@ -105,14 +107,14 @@ export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
     setBusy(true)
     setProgress({ label: 'Préparation…', progress: 0 })
     try {
-      const { text: extracted } =
+      const { text: extracted, lines } =
         files.length === 1
           ? await extractText(files[0], setProgress, { enhance, onPreview: setPreview })
           : await extractTextMulti(files, setProgress, { enhance, onPreview: setPreview })
       const clean = (extracted || '').trim()
       setText(clean)
       clearQueue()
-      if (clean) analyze(clean)
+      if (clean) analyze(clean, lines)
       else setError("Aucun texte n'a pu être lu. Réessayez avec des photos plus nettes, bien cadrées et qui se recouvrent légèrement.")
     } catch (err) {
       console.error(err)
@@ -133,10 +135,10 @@ export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
     setBusy(true)
     setProgress({ label: 'Lecture du PDF…', progress: 0 })
     try {
-      const { text: extracted } = await extractText(file, setProgress, { enhance, onPreview: setPreview })
+      const { text: extracted, lines } = await extractText(file, setProgress, { enhance, onPreview: setPreview })
       const clean = (extracted || '').trim()
       setText(clean)
-      if (clean) analyze(clean)
+      if (clean) analyze(clean, lines)
       else setError("Aucun texte n'a pu être lu dans ce PDF.")
     } catch (err) {
       console.error(err)
@@ -193,7 +195,7 @@ export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
       {isClaude && (
         <div className="ai-panel ai-row">
           <span className="muted">
-            Modèle : <b>{ai.model.includes('haiku') ? 'Haiku 4.5' : 'Sonnet 5'}</b>
+            Modèle : <b>{AI_MODELS[ai.model]?.label || ai.model}</b>
             {ai.apiKey.trim() ? '' : ' · clé API manquante'}
           </span>
           <button type="button" className="btn" style={{ padding: '5px 12px' }} onClick={onOpenSettings} disabled={busy}>

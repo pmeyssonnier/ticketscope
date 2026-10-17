@@ -39,25 +39,40 @@ function matchesWord(norm, keywords) {
   })
 }
 
+// Date ISO valide (rejette 31/02, mois 13…) ou null.
+function validIso(y, mo, d) {
+  const Y = +y
+  const M = +mo
+  const D = +d
+  const dt = new Date(Date.UTC(Y, M - 1, D))
+  if (dt.getUTCFullYear() !== Y || dt.getUTCMonth() !== M - 1 || dt.getUTCDate() !== D) return null
+  return `${String(Y).padStart(4, '0')}-${String(M).padStart(2, '0')}-${String(D).padStart(2, '0')}`
+}
+
 function detectDate(text) {
-  // dd/mm/yyyy ou dd-mm-yyyy ou dd.mm.yyyy (format belge)
-  let m = text.match(/(\b\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})\b/)
-  if (m) {
+  // dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy (format belge) — on essaie chaque occurrence.
+  for (const m of text.matchAll(/(\b\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})\b/g)) {
     let [, d, mo, y] = m
+    if (y.length === 3) continue
     if (y.length === 2) y = '20' + y
-    const iso = `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`
-    if (!Number.isNaN(new Date(iso).getTime())) return iso
+    const iso = validIso(y, mo, d)
+    if (iso) return iso
   }
   // yyyy-mm-dd
-  m = text.match(/\b(\d{4})-(\d{2})-(\d{2})\b/)
-  if (m) return `${m[1]}-${m[2]}-${m[3]}`
+  for (const m of text.matchAll(/\b(\d{4})-(\d{2})-(\d{2})\b/g)) {
+    const iso = validIso(m[1], m[2], m[3])
+    if (iso) return iso
+  }
   return null
 }
 
 function detectStore(lines) {
-  const joined = lines.join(' ')
+  // Enseigne connue : mots entiers, dans l'en-tête uniquement (évite que
+  // « SPARKLING » devienne « Spar » ou qu'un produit désigne le magasin).
+  const head = normalizeStr(lines.slice(0, 6).join(' ')).split(' ')
   for (const r of RETAILERS) {
-    if (normalizeStr(joined).includes(normalizeStr(r))) return r
+    const words = normalizeStr(r).split(' ')
+    if (words.every((w) => head.includes(w))) return r
   }
   // Sinon : première ligne "titre" (lettres, pas de prix, pas une date pure)
   for (const l of lines) {
@@ -129,6 +144,24 @@ export function parseTicket(text) {
         globalDiscounts.push(disc)
       }
       continue
+    }
+
+    // Ligne « 2 x 1,50   3,00 » : quantité × prix unitaire, total en fin de ligne.
+    const mult = parsed.label.match(/^(\d{1,3})\s?[x×]\s?(\d+(?:[.,]\d{1,2})?)$/i)
+    if (mult) {
+      const qty = parseInt(mult[1], 10)
+      const unit = parseAmount(mult[2])
+      if (qty > 1 && unit != null && Math.abs(qty * unit - parsed.amount) < 0.02) {
+        items.push({
+          raw: parsed.label,
+          rawNorm: norm,
+          quantity: qty,
+          unitPrice: unit,
+          gross: parsed.amount,
+          discount: 0,
+        })
+        continue
+      }
     }
 
     // Ligne produit — regroupe les lignes identiques consécutives.

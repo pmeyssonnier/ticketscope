@@ -1,7 +1,7 @@
 import React from 'react'
 
 // Panneau de réglages (modal) : moteur de lecture, modèle IA, clé API.
-export default function Settings({ ai, updateAi, onClose }) {
+export default function Settings({ ai, updateAi, keyKind, onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -32,8 +32,10 @@ export default function Settings({ ai, updateAi, onClose }) {
 
         <label className="field">Modèle IA (mode ✨ Claude)</label>
         <select value={ai.model} onChange={(e) => updateAi({ model: e.target.value })}>
-          <option value="claude-haiku-4-5">Haiku 4.5 — rapide / économique (~0,005 €/ticket)</option>
-          <option value="claude-sonnet-5">Sonnet 5 — plus précis (~0,02 €/ticket)</option>
+          <option value="claude-haiku-4-5">Haiku 4.5 — rapide / économique (recommandé)</option>
+          <option value="claude-haiku-5-5">Haiku 5.5 — plus récent, moins cher (à tester)</option>
+          <option value="claude-sonnet-5">Sonnet 5 — plus précis</option>
+          <option value="claude-sonnet-5-5">Sonnet 5.5 — plus précis (à tester)</option>
         </select>
 
         <label className="field" style={{ marginTop: 12 }}>
@@ -47,9 +49,15 @@ export default function Settings({ ai, updateAi, onClose }) {
           autoComplete="off"
         />
         <p className="inline-note">
-          🔑 Votre clé reste <b>sur cet appareil</b> (stockage local du navigateur), jamais
-          transmise ailleurs qu'à l'API Anthropic. Créez-en une sur{' '}
-          <b>console.anthropic.com</b>.
+          🔑 Votre clé reste <b>sur cet appareil</b>, jamais transmise ailleurs qu'à l'API
+          Anthropic. Créez-en une sur <b>console.anthropic.com</b> (avec une limite de dépense).
+        </p>
+        <p className="inline-note">
+          {keyKind === 'encrypted' && '🔒 Clé chiffrée sur cet appareil (clé non exportable du navigateur).'}
+          {keyKind === 'memory' &&
+            '⚠️ La clé n’a pas pu être conservée (chiffrement indisponible ou stockage plein) : elle reste en mémoire jusqu’à la fermeture de l’application et devra être ressaisie.'}
+          {keyKind === 'legacy' &&
+            '⚠️ Ce navigateur ne permet pas le chiffrement : la clé reste dans l’ancien emplacement, en clair.'}
         </p>
         <p className="inline-note">
           ⚠️ En mode <b>✨ IA</b>, l'image du ticket est <b>envoyée à l'API Anthropic</b> (elle

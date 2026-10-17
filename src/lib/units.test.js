@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseFormat, unitPrice } from './units.js'
+import { parseFormat, unitPrice, unitPriceFor } from './units.js'
 
 describe('parseFormat', () => {
   it('lit le poids et normalise en kg', () => {
@@ -42,5 +42,44 @@ describe('unitPrice', () => {
   })
   it('renvoie null sans format exploitable', () => {
     expect(unitPrice(3.99, 1, 'Ravioli')).toBeNull()
+  })
+})
+
+describe('formats (régressions audit)', () => {
+  it('« max 12 » n\'est pas un pack de 12', () => {
+    expect(parseFormat('PRIX MAX 12')).toBeNull()
+  })
+  it('le texte « ×12 » se reparse (prix unitaire conservé)', () => {
+    expect(parseFormat('×12')?.baseQty).toBe(12)
+    expect(unitPriceFor({ net: 4.8, quantity: 1, format: '×12', raw: '' })?.value).toBe(0.4)
+  })
+  it('multipack 2x33cl = 0,66 L', () => {
+    const f = parseFormat('COLA 2x33cl')
+    expect(f.baseQty).toBe(0.66)
+    expect(parseFormat(f.text)?.baseQty).toBe(0.66)
+  })
+})
+
+describe('prix unitaire — montants négatifs', () => {
+  it('pas de prix unitaire pour une remise ou un montant nul', () => {
+    expect(unitPriceFor({ net: -3.98, quantity: 1, format: '', raw: 'Boxers 3 x 19,99EUR' })).toBeNull()
+    expect(unitPrice(0, 1, '1 kg')).toBeNull()
+    expect(unitPrice(2.5, 1, '1 kg')).toEqual({ value: 2.5, label: '€/kg' })
+  })
+})
+
+describe('vrac au litre (audit P2)', () => {
+  it('« /L » et « au litre » : volume, pas poids', () => {
+    expect(parseFormat('HUILE OLIVE /L')).toMatchObject({ text: 'vrac', base: 'L', saleType: 'volume', baseQty: null })
+    expect(parseFormat('JUS D ORANGE AU LITRE')).toMatchObject({ base: 'L', saleType: 'volume' })
+    expect(parseFormat('VRAC VINAIGRE / L')).toMatchObject({ base: 'L' })
+  })
+  it('« /kg », « au poids », « vrac » : poids', () => {
+    expect(parseFormat('POMMES /KG')).toMatchObject({ base: 'kg', saleType: 'weight' })
+    expect(parseFormat('FROMAGE AU POIDS')).toMatchObject({ base: 'kg' })
+    expect(parseFormat('NOIX VRAC')).toMatchObject({ base: 'kg' })
+  })
+  it('un format en litres reste un volume avec contenance', () => {
+    expect(parseFormat('EAU 1,5 L')).toMatchObject({ base: 'L', baseQty: 1.5 })
   })
 })

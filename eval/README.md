@@ -1,0 +1,43 @@
+# Suivi de précision
+
+`npm run eval` mesure ce que le pipeline **local** de TicketScope (texte → lignes →
+COICOP) fait d'un ticket, sur un jeu de tickets annotés (`dataset.json`), avec ou
+sans bruit OCR. `npm test` rejoue les mêmes mesures avec des seuils (« cliquet ») :
+une baisse fait échouer le test. Après une amélioration, **remontez les seuils** de
+`eval.test.js`.
+
+## Indicateurs
+
+| Indicateur | Sens |
+|---|---|
+| lignes retrouvées / précision | lignes attendues retrouvées ; lignes produites qui correspondent |
+| net exact | montant net identique à l'attendu (quantités, remises) |
+| COICOP exact | bon code, parmi les lignes attendues qui ont un code de référence |
+| couverture | part des lignes qui reçoivent un code (sinon : à classer à la main) |
+| erreurs signalées | parmi les codes faux, part marquée « à confirmer » |
+| total cohérent | total recalculé = total du ticket |
+| calibration | part de bons codes par tranche de confiance (≥ 85 %, 75–85 %, < 75 %) |
+
+Bruit OCR : à 3 % / 6 %, chaque lettre d'un libellé a cette probabilité d'être
+confondue (I↔l, O→0…), perdue ou doublée, avec une graine fixe (résultats
+reproductibles). Les montants ne sont pas altérés. Ce n'est pas un test de l'OCR
+lui-même (pas d'image) ; la confiance de lecture par ligne (Tesseract / IA) est
+affichée dans l'application.
+
+## Fiabilité de la référence : lisez `provenance`
+
+- `proxy-ocr` : libellés d'un OCR réel ; codes proposés par le **mode IA** (gardés
+  si la confiance IA ≥ 75 %), **non validés par un humain**. L'indicateur mesure
+  donc l'accord avec l'IA, pas la justesse absolue.
+- `vetements-synthetique`, `courses-synthetique` : tickets inventés, annotés à la
+  main avec les codes du référentiel du projet.
+
+Pour une vraie référence : relire les codes d'un ticket dans l'écran de correction,
+exporter, puis remplacer les `coicop` du jeu par les codes validés.
+
+## Ajouter un ticket
+
+Ajouter un objet à `tickets` : `id`, `provenance`, `store`, `date` (`jj/mm/aaaa`),
+`declaredTotal`, et `items` (`raw`, `quantity`, `unitPrice`, `discount`, `net`,
+`coicop` ou `null` si la référence est incertaine). Ne pas y mettre de ticket
+personnel : le jeu est versionné.

@@ -36,3 +36,28 @@ describe('suggestClassification', () => {
     expect(suggestClassification('Chorizo').coicop).toBe('01.1.2')
   })
 })
+
+describe('suggestClassification — habillement', () => {
+  it.each([
+    ['BOXERS 3 PACK', '03.1.2'],
+    ['Chemise lin bleu', '03.1.2'],
+    ['T-shirt blanc XL', '03.1.2'],
+    ['Pantalon chino navy', '03.1.2'],
+    ['Chaussettes x3', '03.1.3'],
+    ['Ceinture cuir', '03.1.3'],
+    ['Baskets blanches', '03.2.1'],
+  ])('%s -> %s', (name, code) => {
+    expect(suggestClassification(name)?.coicop).toBe(code)
+  })
+  it('ne confond pas avec l\'alimentaire', () => {
+    expect(suggestClassification('Chorizo doux')?.coicop).toBe('01.1.2')
+    expect(suggestClassification('Pain de campagne')?.coicop).toBe('01.1.1')
+  })
+})
+
+describe('suggestClassification — accessoires de chaussures', () => {
+  it('lacets et semelles : chaussures, pas alimentaire', () => {
+    expect(suggestClassification('Lacet gros rond vert dik 90 brun')?.coicop).toBe('03.2.1')
+    expect(suggestClassification('Semelles confort')?.coicop).toBe('03.2.1')
+  })
+})

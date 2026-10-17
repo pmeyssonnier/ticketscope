@@ -1,11 +1,13 @@
-// Persistance locale (localStorage) — tickets enregistrés et base apprise.
+// Persistance locale (localStorage) — base apprise et réglages. Les tickets
+// enregistrés sont dans IndexedDB (voir ticketStore.js).
 // Aucune donnée ne quitte l'appareil : conforme à l'usage hors-ligne de la PWA.
 
 import { normalizeStr, uid } from './format.js'
+import { AI_MODELS } from './claudeVision.js'
 
-const TICKETS_KEY = 'ticketscope.tickets.v1'
 const LEARNED_KEY = 'ticketscope.learned.v1'
 const AI_KEY = 'ticketscope.ai.v1'
+const LAST_BACKUP_KEY = 'ticketscope.lastBackup.v1'
 
 function read(key, fallback) {
   try {
@@ -16,36 +18,15 @@ function read(key, fallback) {
   }
 }
 
+// true si l'écriture a réellement eu lieu.
 function write(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value))
+    return true
   } catch (e) {
     console.error('TicketScope: échec de sauvegarde locale', e)
+    return false
   }
-}
-
-// --- Tickets ---
-export function loadTickets() {
-  const list = read(TICKETS_KEY, [])
-  return Array.isArray(list) ? list : []
-}
-
-export function saveTicket(ticket) {
-  const list = loadTickets()
-  const withId = ticket.id ? ticket : { ...ticket, id: uid('tk') }
-  const idx = list.findIndex((t) => t.id === withId.id)
-  if (idx >= 0) list[idx] = withId
-  else list.unshift(withId)
-  write(TICKETS_KEY, list)
-  return withId
-}
-
-export function deleteTicket(id) {
-  write(TICKETS_KEY, loadTickets().filter((t) => t.id !== id))
-}
-
-export function clearTickets() {
-  write(TICKETS_KEY, [])
 }
 
 // --- Base apprise (corrections) ---
@@ -56,10 +37,12 @@ export function loadLearned() {
 
 // Enregistre une correction : le libellé brut -> produit/COICOP corrigés.
 // Enrichit la base pour les prochains tickets (auto-apprentissage).
+// Renvoie false seulement si l'écriture a échoué (true sinon, y compris quand
+// la correction n'a rien à apprendre).
 export function learnFromCorrection(rawLabel, correction) {
-  if (!rawLabel || !correction || !correction.coicop) return
+  if (!rawLabel || !correction || !correction.coicop) return true
   const key = normalizeStr(rawLabel)
-  if (!key) return
+  if (!key) return true
   const list = loadLearned()
   const entry = {
     id: uid('learn'),
@@ -72,23 +55,29 @@ export function learnFromCorrection(rawLabel, correction) {
   const idx = list.findIndex((e) => (e.keywords || []).includes(key))
   if (idx >= 0) list[idx] = { ...list[idx], ...entry, id: list[idx].id }
   else list.push(entry)
-  write(LEARNED_KEY, list)
+  return write(LEARNED_KEY, list)
 }
 
 export function clearLearned() {
   write(LEARNED_KEY, [])
 }
 
-// --- Réglages IA (moteur de lecture, modèle, clé API — locaux à l'appareil) ---
-const AI_DEFAULTS = { engine: 'local', model: 'claude-haiku-4-5', apiKey: '' }
+// --- Réglages IA (moteur de lecture, modèle — locaux à l'appareil) ---
+// La clé API n'est jamais écrite ici : voir secretStore.js (chiffrée).
+const AI_DEFAULTS = { engine: 'local', model: 'claude-haiku-4-5' }
 
 export function loadAiSettings() {
   const s = read(AI_KEY, {})
-  return { ...AI_DEFAULTS, ...(s && typeof s === 'object' ? s : {}) }
+  const { apiKey, ...stored } = s && typeof s === 'object' ? s : {} // eslint-disable-line no-unused-vars
+  const merged = { ...AI_DEFAULTS, ...stored }
+  // Modèle inconnu (identifiant retiré ou altéré) -> modèle par défaut.
+  if (!AI_MODELS[merged.model]) merged.model = AI_DEFAULTS.model
+  return merged
 }
 
 export function saveAiSettings(patch) {
-  const next = { ...loadAiSettings(), ...patch }
+  const { apiKey, ...rest } = patch || {} // eslint-disable-line no-unused-vars
+  const next = { ...loadAiSettings(), ...rest }
   write(AI_KEY, next)
   return next
 }
@@ -145,4 +134,14 @@ export function mergeLearned(data) {
   }
   write(LEARNED_KEY, list)
   return { added, updated, skipped }
+}
+
+// --- Date de la dernière sauvegarde complète exportée (pour le rappel) ---
+export function loadLastBackup() {
+  const v = read(LAST_BACKUP_KEY, null)
+  return typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? v : null
+}
+
+export function markBackupDone(date = new Date()) {
+  write(LAST_BACKUP_KEY, date.toISOString())
 }

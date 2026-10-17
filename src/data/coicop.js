@@ -13,6 +13,12 @@ export const COICOP_LABELS = {
   '01.1.8': 'Sucre, confiture, miel, chocolat et confiserie',
   '01.1.9': 'Produits alimentaires n.d.a.',
   '02.1.2': 'Boissons sans alcool',
+  '03.1.1': 'Tissus pour vêtements',
+  '03.1.2': 'Vêtements',
+  '03.1.3': 'Autres articles d\'habillement et accessoires',
+  '03.1.4': 'Nettoyage, réparation et location de vêtements',
+  '03.2.1': 'Chaussures et autres articles chaussants',
+  '03.2.2': 'Réparation et location de chaussures',
   '05.6.1': 'Biens ménagers non durables',
 }
 
@@ -20,6 +26,7 @@ export const COICOP_LABELS = {
 export const COICOP_DIVISIONS = {
   '01': 'Produits alimentaires et boissons non alcoolisées',
   '02': 'Boissons alcoolisées et tabac',
+  '03': 'Articles d\'habillement et chaussures',
   '05': 'Meubles, articles de ménage et entretien courant',
 }
 

@@ -42,8 +42,29 @@ export function parseFormat(label) {
   if (!s.trim()) return null
 
   // Vendu au poids / au litre (contenance de l'exemplaire inconnue).
-  if (/\bvrac\b|au poids|\/\s?kg|\/\s?l\b/.test(s)) {
+  // Au litre (« /L », « au litre ») : volume ; sinon au poids (« /kg », « vrac »).
+  if (/\/\s?l\b|au litre/.test(s)) {
+    return { text: 'vrac', base: 'L', baseQty: null, saleType: 'volume' }
+  }
+  if (/\bvrac\b|au poids|\/\s?kg/.test(s)) {
     return { text: 'vrac', base: 'kg', baseQty: null, saleType: 'weight' }
+  }
+
+  // Multipack « 6 x 33 cl » : contenance totale = n × contenance unitaire.
+  const mp = s.match(/(\d+)\s?[x×]\s?(\d+(?:[.,]\d+)?)\s?(kg|dl|cl|ml|gr|g|l)\b/)
+  if (mp) {
+    const n = parseInt(mp[1], 10)
+    const value = parseFloat(mp[2].replace(',', '.'))
+    const conv = unitToBase(mp[3])
+    if (n > 1 && conv && value > 0) {
+      const u = mp[3] === 'gr' ? 'g' : mp[3]
+      return {
+        text: `${n} × ${mp[2]} ${u}`,
+        base: conv.base,
+        baseQty: +(n * value * conv.factor).toFixed(4),
+        saleType: conv.base === 'kg' ? 'weight' : 'volume',
+      }
+    }
   }
 
   // Poids / volume : nombre + unité.
@@ -63,7 +84,8 @@ export function parseFormat(label) {
   }
 
   // Nombre de pièces : « x12 », « 12x », « 12 pièces ».
-  const c = s.match(/x\s?(\d+)\b/) || s.match(/(\d+)\s?(?:x\b|pi[eè]ces?\b)/)
+  // « x » ou « × » précédé d'un début de mot (pas « max 12 »).
+  const c = s.match(/(?:^|[^a-z0-9])[x×]\s?(\d+)\b/) || s.match(/\b(\d+)\s?(?:[x×](?![a-z0-9])|pi[eè]ces?\b)/)
   if (c) {
     const n = parseInt(c[1], 10)
     if (n > 1) return { text: `×${n}`, base: 'pièce', baseQty: n, saleType: 'count' }
@@ -76,7 +98,8 @@ export function parseFormat(label) {
 // du format. Renvoie { value, label } (ex. { 2.63, '€/kg' }) ou null.
 export function unitPrice(net, quantity, format) {
   const f = typeof format === 'string' ? parseFormat(format) : format
-  if (!f || f.baseQty == null || net == null) return null
+  // Un montant nul ou négatif (remise, promotion) n'a pas de prix unitaire.
+  if (!f || f.baseQty == null || net == null || Number(net) <= 0) return null
   const totalBase = f.baseQty * (Number(quantity) || 1)
   if (!totalBase) return null
   return { value: +(net / totalBase).toFixed(2), label: `€/${f.base}` }
