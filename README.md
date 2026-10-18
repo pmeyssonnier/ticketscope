@@ -342,6 +342,9 @@ l'IA et **ne sont pas validés par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.9.10** — tableau de bord : le camembert « Répartition par division COICOP » n'affiche
+  plus que des pourcentages ; une **légende** donne le nom complet de chaque division, son
+  montant et sa part (les noms longs étaient tronqués au premier mot sur téléphone).
 - **2.9.9** — **11 classes COICOP de plus** (39 au total) : restaurants et cafés `11.1.1`,
   cantines `11.1.2`, linge de maison `05.2.1`, petits appareils `05.3.2`, vaisselle et
   ustensiles `05.4.0`, outillage non motorisé `05.5.2`, médicaments `06.1.1`, produits
