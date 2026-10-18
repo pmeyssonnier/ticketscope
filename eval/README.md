@@ -51,8 +51,8 @@ Trois lignes ont été recodées après confrontation à la source : « BUNDA GI
 `02.1.2` → `01.2.6` (soda ; `02.1.2` est le vin), « JUS ORANGE 1L » `02.1.2` →
 `01.2.1`, « CAFE MOULU 250G » `01.1.9` → `01.2.2` (mon annotation initiale était
 fausse). « SAUCE TOMATE » reste `01.1.9` (sauces et condiments, `01.1.9.3`).
-« MCCAIN AIRFRY » reste en désaccord (dictionnaire `01.1.9`, référence `01.1.7`) :
-la structure officielle ne tranche pas les frites surgelées, à valider.
+« MCCAIN AIRFRY » était en désaccord (dictionnaire `01.1.9`, référence `01.1.7`) : le texte
+officiel tranche (« chipped potatoes, frozen » = 01.1.7.9), le dictionnaire a été corrigé en 2.9.12.
 
 ## Tickets des classes ajoutées (2.9.9)
 
