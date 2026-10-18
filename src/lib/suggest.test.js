@@ -82,6 +82,13 @@ describe('suggestClassification — accessoires de chaussures', () => {
     expect(suggestClassification('Thermos 1L')?.coicop).not.toBe('01.2.3')
   })
 
+  it('lacets, cirage, cordonnerie', () => {
+    expect(suggestClassification('Lacets bruns 90cm').coicop).toBe('03.2.1')
+    expect(suggestClassification('Lacet gros rond vet dik 90 brun').coicop).toBe('03.2.1')
+    expect(suggestClassification('Cirage noir').coicop).toBe('05.6.1')
+    expect(suggestClassification('Ressemelage homme').coicop).toBe('03.2.2')
+  })
+
   it('nouvelles classes : soins corporels, santé, carburant, restauration, ménage', () => {
     const code = (n) => suggestClassification(n)?.coicop
     expect(code('SHAMPOOING DOUX 250ML')).toBe('13.1.2')

@@ -3,6 +3,7 @@ import { COICOP_LABELS } from '../data/coicop.js'
 import { formatEUR } from '../lib/format.js'
 import { suggestClassification } from '../lib/suggest.js'
 import { unitPriceFor } from '../lib/units.js'
+import { shouldSuggest } from '../lib/review.js'
 import { ConfidenceBadge } from './ui.jsx'
 
 const COICOP_OPTIONS = Object.keys(COICOP_LABELS)
@@ -10,7 +11,8 @@ const COICOP_OPTIONS = Object.keys(COICOP_LABELS)
 // Une ligne du ticket sous forme de fiche (téléphone) : champs étiquetés,
 // pleine largeur, sans défilement horizontal.
 export default function ReviewCard({ it, onUpdate, onCorrect, onSuggest, onRemove, onConfirmRead }) {
-  const suggestion = !it.coicop ? suggestClassification(it.normalized || it.raw) : null
+  const found = suggestClassification(it.normalized || it.raw)
+  const suggestion = shouldSuggest(it, found) ? found : null
   const up = unitPriceFor(it)
   const readDoubtful = it.readConfidence != null && it.readConfidence < 0.75
   const name = it.normalized || it.raw || 'ligne'
@@ -30,6 +32,10 @@ export default function ReviewCard({ it, onUpdate, onCorrect, onSuggest, onRemov
         </button>
       </header>
       <div className="raw">{it.manual ? '➕ ligne ajoutée' : `brut : ${it.raw}`}</div>
+      <label className="rfull">
+        <span>Marque (optionnel)</span>
+        <input type="text" value={it.brand || ''} placeholder="ex. Dash, McCain, Celio" onChange={(e) => onCorrect(it.id, { brand: e.target.value })} />
+      </label>
 
       {suggestion && (
         <button type="button" className="suggest-chip" onClick={() => onSuggest(it.id, suggestion)} title="Appliquer cette suggestion">

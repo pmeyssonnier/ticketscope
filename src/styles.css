@@ -1217,3 +1217,9 @@ table.data td .raw {
   font-variant-numeric: tabular-nums;
 }
 
+/* Champ « Marque » sous le nom du produit (tableau de correction). */
+.brand-input {
+  margin-top: 4px;
+  font-size: 0.85rem;
+}
+

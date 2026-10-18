@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeNeedsReview, recomputeAmounts, reviewSummary, formatGap } from './review.js'
+import { computeNeedsReview, recomputeAmounts, reviewSummary, formatGap, correctionsToLearn, shouldSuggest } from './review.js'
 
 const eur = (n) => `${n.toFixed(2).replace('.', ',')} €`
 const item = (extra = {}) => ({ id: 'a', quantity: 1, unitPrice: 2, gross: 2, discount: 0, net: 2, coicop: '01.1.1', confidence: 0.95, ...extra })
@@ -75,3 +75,41 @@ describe('montants en centimes (review)', () => {
     expect(reviewSummary(items, 0, 1.02).diff).toBe(-0.02)
   })
 })
+
+describe('apprentissage des corrections', () => {
+  const ligne = (extra) => ({ raw: 'LAC GROS HOND VET UIK 99 BR', normalized: 'Lacet gros rond', brand: '', coicop: '01.1.4', category: 'Produits laitiers', confidence: 0.45, corrected: true, ...extra })
+
+  it('corriger seulement le nom d\'une ligne au code douteux n\'apprend PAS ce code (ticket « lacets » de la sauvegarde)', () => {
+    expect(correctionsToLearn([ligne()])).toEqual([])
+  })
+
+  it('code choisi par l\'utilisateur (confiance 1) : appris, avec la marque', () => {
+    const l = ligne({ coicop: '03.2.1', category: 'Chaussures', confidence: 1, brand: 'Mister Minit' })
+    expect(correctionsToLearn([l])).toEqual([
+      { raw: l.raw, correction: { normalized: 'Lacet gros rond', brand: 'Mister Minit', coicop: '03.2.1', category: 'Chaussures' } },
+    ])
+  })
+
+  it('ligne déjà sûre dont on corrige le nom ou la marque : apprise ; ligne non corrigée, manuelle ou sans code : jamais', () => {
+    expect(correctionsToLearn([ligne({ coicop: '01.1.1', confidence: 0.9 })])).toHaveLength(1)
+    expect(correctionsToLearn([ligne({ confidence: 1, corrected: false })])).toEqual([])
+    expect(correctionsToLearn([ligne({ confidence: 1, manual: true })])).toEqual([])
+    expect(correctionsToLearn([ligne({ confidence: 1, coicop: null })])).toEqual([])
+  })
+})
+
+describe('suggestion de code', () => {
+  const s = { coicop: '03.2.1', category: 'Chaussures' }
+
+  it('proposée pour une ligne non classée, ou au code douteux qui diffère de la suggestion', () => {
+    expect(shouldSuggest({ coicop: null }, s)).toBe(true)
+    expect(shouldSuggest({ coicop: '01.1.4', confidence: 0.45 }, s)).toBe(true)
+  })
+
+  it('pas proposée si le code est sûr, identique à la suggestion, ou s\'il n\'y a pas de suggestion', () => {
+    expect(shouldSuggest({ coicop: '01.1.4', confidence: 0.9 }, s)).toBe(false)
+    expect(shouldSuggest({ coicop: '03.2.1', confidence: 0.45 }, s)).toBe(false)
+    expect(shouldSuggest({ coicop: null }, null)).toBe(false)
+  })
+})
+

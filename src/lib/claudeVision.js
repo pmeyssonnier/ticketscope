@@ -11,7 +11,7 @@ import { COICOP_LABELS, coicopLabel, isKnownCoicop } from '../data/coicop.js'
 import { uid, normalizeStr, titleFromRaw } from './format.js'
 import { parseFormat } from './units.js'
 import { computeNeedsReview } from './review.js'
-import { roundMoney, mulMoney, sumMoney } from './money.js'
+import { roundMoney, mulMoney, sumMoney, toCents } from './money.js'
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const COICOP_CODES = Object.keys(COICOP_LABELS)
@@ -121,7 +121,7 @@ Consignes :
 - "format" = contenance d'UN exemplaire telle qu'imprimée : poids ("750 g", "1 kg"), volume ("880 ml", "1 L", "37,5 cl"), ou nombre ("12 pièces"). Mets "vrac" si vendu au poids, "" si aucune contenance.
 - Vêtements et chaussures : le libellé est souvent un nom de modèle suivi de la couleur et de la taille (« DAXFORDMC BLUE,XXL »). Garde-le tel quel dans "raw" ; dans "product", indique le type d'article UNIQUEMENT si le libellé ou une promotion qui le vise (« item_numbers ») le dit clairement ; sinon recopie le nom du modèle (« Daxfordmc »). Un libellé de promotion ne s'applique qu'aux articles de ses « item_numbers » : ne donne jamais son nom aux autres articles, et ne devine pas un type d'article à partir d'un autre article du ticket.
 - Le prix d'un article est le montant imprimé à droite de SA propre ligne. Ne le déduis jamais d'un autre prix du ticket (prix de lot d'une promotion, total, sous-total) : recopie chaque chiffre tel qu'imprimé (17,99 reste 17,99).
-- Codes d'habillement : vêtements, y compris sous-vêtements (boxer, slip, chemise, pull, pantalon…) = 03.1.2 ; 03.1.3 seulement pour les accessoires (ceinture, écharpe, gants, bonnet, chaussettes…) ; chaussures = 03.2.1.
+- Codes d'habillement : vêtements, y compris sous-vêtements (boxer, slip, chemise, pull, pantalon…) = 03.1.2 ; 03.1.3 seulement pour les accessoires (ceinture, écharpe, gants, bonnet, chaussettes…) ; chaussures, lacets et semelles = 03.2.1 ; cirage et produits d'entretien des chaussures = 05.6.1 ; réparation de chaussures (service) = 03.2.2.
 - Rattache une réduction "sur article" au produit concerné : "discount" est négatif, "net" = quantity×unit_price + discount.
 - Promotion de lot (ex. « Boxers 3 x 19,99EUR = -3,98 » : un libellé suivi d'un montant NÉGATIF) : ce n'est PAS un produit. Ne la mets JAMAIS dans "items" ; décris-la dans "promotions" avec "label" (libellé imprimé), "amount" (négatif, tel qu'imprimé) et "item_numbers" (rang, à partir de 1, dans "items", des articles concernés, p. ex. ceux marqués « a »). Chaque article concerné garde SON propre prix imprimé (7,99), jamais le prix du lot, et n'a pas de "discount" pour cette promotion.
 - Remise globale du récapitulatif (coupon, carte de fidélité…) qui n'est rattachée à aucun article : mets-la aussi dans "promotions", avec "item_numbers": [] (sans doublon avec une remise déjà rattachée à un article ou une promotion de lot).
@@ -272,22 +272,80 @@ export function withPromotionLines(items, promotions) {
   return out
 }
 
-// Le type d'article d'une promotion de lot (« Boxers 3 x 19,99EUR » → « Boxer »)
-// ne vaut que pour les articles qu'elle vise. Le modèle l'étend parfois à tous les
-// articles du ticket : on le remet sur les articles visés et on rend aux autres
-// leur nom de modèle. Sans rattachement fiable (plus d'articles visés que le « N x »
-// du libellé), on ne touche à rien.
+// Promotion de lot « Boxers 3 x 19,99EUR » (ou « Boxer's 3 x 19,99EUR ») : type d'article, nombre
+// d'articles et prix du lot. Renvoie null si le libellé n'a pas cette forme.
+function parseLotLabel(label) {
+  const m = /^\s*([A-Za-zÀ-ÿ-]{3,}?)(?:['’]?s)?\s+(\d+)\s*[x×]\s*(\d+(?:[.,]\d{2})?)/i.exec(label || '')
+  if (!m) return null
+  return {
+    type: m[1][0].toUpperCase() + m[1].slice(1).toLowerCase(),
+    count: Number(m[2]),
+    lotCents: toCents(m[3].replace(',', '.')),
+  }
+}
+
+// Combinaisons de `k` indices parmi `pool` dont la somme des montants vaut `target` (centimes).
+function subsetsWithSum(pool, cents, k, target, limit = 50) {
+  const found = []
+  const walk = (start, chosen, sum) => {
+    if (found.length >= limit) return
+    if (chosen.length === k) {
+      if (sum === target) found.push([...chosen])
+      return
+    }
+    for (let i = start; i < pool.length; i += 1) {
+      chosen.push(pool[i])
+      walk(i + 1, chosen, sum + cents[pool[i]])
+      chosen.pop()
+    }
+  }
+  walk(0, [], 0)
+  return found
+}
+
+// Articles visés par une promotion de lot. Le modèle indique parfois les mauvais articles
+// (« Boxers 3 x 19,99 » : il a visé la chemise à 17,99 au lieu du 3e boxer à 7,99). Le libellé
+// permet de le vérifier : la somme des articles visés vaut le prix du lot PLUS la remise
+// (3 × 7,99 = 23,97 = 19,99 + 3,98). Si les articles indiqués ne vérifient pas cela, on cherche
+// la combinaison de N articles qui le vérifie, quand elle est unique (ou la plus proche de
+// l'indication du modèle). Sinon on garde l'indication du modèle, ou rien si elle est douteuse.
+export function resolvePromotionLinks(items, promo) {
+  const lot = parseLotLabel(promo && promo.label)
+  const given = [...new Set((promo.item_numbers || []).map((n) => Number(n) - 1))].filter((i) => items[i])
+  if (!lot) return { lot: null, linked: given }
+  const amount = Number(promo.amount)
+  if (!(amount < 0) || lot.count < 2 || lot.count > 6) return { lot, linked: given.length <= lot.count ? given : [] }
+  const target = lot.lotCents + Math.abs(toCents(amount))
+  const cents = items.map((it) => toCents(it.net))
+  const sum = (idx) => idx.reduce((a, i) => a + cents[i], 0)
+  if (given.length === lot.count && sum(given) === target) return { lot, linked: given }
+
+  const pool = items.map((it, i) => i).filter((i) => Number(items[i].quantity) === 1 && cents[i] > 0).slice(0, 60)
+  const combos = subsetsWithSum(pool, cents, lot.count, target)
+  if (combos.length === 1) return { lot, linked: combos[0] }
+  if (combos.length > 1) {
+    const overlap = (c) => c.filter((i) => given.includes(i)).length
+    const best = Math.max(...combos.map(overlap))
+    const top = combos.filter((c) => overlap(c) === best)
+    if (top.length === 1) return { lot, linked: top[0] }
+  }
+  return { lot, linked: given.length <= lot.count ? given : [] }
+}
+
+// Le type d'article d'une promotion de lot (« Boxers 3 x 19,99EUR » → « Boxer ») ne vaut que
+// pour les articles qu'elle vise (voir resolvePromotionLinks). Le modèle l'étend parfois à tous
+// les articles du ticket : on le remet sur les articles visés et on rend aux autres leur nom de
+// modèle. Sans rattachement fiable (plus d'articles visés que le « N x » du libellé), on ne
+// touche à rien.
 export function namePromotedItems(items, promotions) {
   const out = items.map((it) => ({ ...it }))
   for (const promo of Array.isArray(promotions) ? promotions : []) {
-    const m = /^\s*([A-Za-zÀ-ÿ'-]{3,}?)s?\s+(\d+)\s*[x×]/i.exec(promo?.label || '')
-    if (!m) continue
-    const type = m[1][0].toUpperCase() + m[1].slice(1).toLowerCase()
-    const linked = new Set((promo.item_numbers || []).map((n) => Number(n) - 1).filter((i) => out[i]))
-    if (!linked.size || linked.size > Number(m[2])) continue
+    const { lot, linked } = resolvePromotionLinks(out, promo || {})
+    if (!lot || !linked.length || linked.length > lot.count) continue
+    const set = new Set(linked)
     out.forEach((it, i) => {
-      if (linked.has(i)) it.normalized = type
-      else if (normalizeStr(it.normalized) === normalizeStr(type)) it.normalized = titleFromRaw(it.raw) || it.raw
+      if (set.has(i)) it.normalized = lot.type
+      else if (normalizeStr(it.normalized) === normalizeStr(lot.type)) it.normalized = titleFromRaw(it.raw) || it.raw
     })
   }
   return out

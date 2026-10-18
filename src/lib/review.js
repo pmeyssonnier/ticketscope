@@ -46,3 +46,25 @@ export function formatGap(diff, formatEUR) {
   if (Math.abs(diff) < 0.005) return formatEUR(0)
   return `${diff > 0 ? '+' : '−'}${formatEUR(Math.abs(diff))}`
 }
+
+// Corrections à mémoriser (dictionnaire appris) à l'enregistrement d'un ticket.
+// On n'apprend qu'une classification CONFIRMÉE : choisie par l'utilisateur (la confiance passe
+// alors à 1) ou déjà sûre. Corriger seulement le nom d'une ligne dont le code est douteux ne
+// doit pas figer ce code douteux en « 99 % » pour les prochains tickets.
+export function correctionsToLearn(items) {
+  return items
+    .filter((it) => it.corrected && it.coicop && !it.manual && it.raw && (Number(it.confidence) || 0) >= REVIEW_THRESHOLD)
+    .map((it) => ({
+      raw: it.raw,
+      correction: { normalized: it.normalized, brand: it.brand, coicop: it.coicop, category: it.category },
+    }))
+}
+
+// Faut-il proposer la suggestion de code (règles) pour cette ligne ? Oui si elle n'est pas
+// classée, ou si son code est douteux (confiance faible) et que la suggestion en diffère.
+export function shouldSuggest(it, suggestion) {
+  if (!suggestion) return false
+  if (!it.coicop) return true
+  return (Number(it.confidence) || 0) < REVIEW_THRESHOLD && suggestion.coicop !== it.coicop
+}
+
