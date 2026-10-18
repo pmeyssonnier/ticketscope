@@ -50,8 +50,7 @@ test('une nouvelle version déployée est prise en compte, sans perte de donnée
     await page.waitForFunction(() => navigator.serviceWorker?.controller, null, { timeout: 30_000 })
     await page.reload()
     expect(await build(page)).toBe('1')
-    await page.getByRole('button', { name: /Exemple/ }).click()
-    await page.getByRole('button', { name: /Analyser le ticket/ }).click()
+    await page.getByRole('button', { name: /ticket d'exemple/ }).click()
     await page.getByRole('button', { name: /Enregistrer/ }).first().click()
     await expect(page.locator('nav .badge')).toHaveText('1')
 

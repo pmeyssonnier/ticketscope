@@ -6,6 +6,7 @@ import { loadLearned, exportLearnedData, mergeLearned, clearLearned, loadLastBac
 import { ticketEngine, engineLabel } from '../lib/compare.js'
 import Compare from './Compare.jsx'
 import { ConfidenceBadge, Empty } from './ui.jsx'
+import { familyLabel } from '../data/familyLabels.js'
 import { planReclassification, applyReclassification } from '../lib/bulkReclassify.js'
 
 // Reclassement en masse : propose, avec aperçu, de reclasser les lignes douteuses ou sans code des
@@ -325,7 +326,7 @@ function LearnedManager() {
   )
 }
 
-export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onReload }) {
+export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onReload, advanced = true }) {
   const [query, setQuery] = useState('')
   const [backupStatus, setBackupStatus] = useState('')
   const [openId, setOpenId] = useState(null)
@@ -366,8 +367,8 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onR
             Excel / CSV / JSON.
           </Empty>
         </div>
-      <BackupManager ticketCount={0} onReload={onReload} status={backupStatus} setStatus={setBackupStatus} />
-        <LearnedManager />
+        {advanced && <BackupManager ticketCount={0} onReload={onReload} status={backupStatus} setStatus={setBackupStatus} />}
+        {advanced && <LearnedManager />}
       </div>
     )
   }
@@ -375,10 +376,11 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onR
   return (
     <div>
       <div className="card">
-        <h2>Exports</h2>
+        <h2>{advanced ? 'Exports' : 'Envoyer mes dépenses'}</h2>
         <p className="hint">
-          Exportez l'ensemble de vos {tickets.length} ticket(s) et de leurs
-          lignes pour Excel, Power BI ou tout autre outil.
+          {advanced
+            ? `Exportez l'ensemble de vos ${tickets.length} ticket(s) et de leurs lignes pour Excel, Power BI ou tout autre outil.`
+            : `Téléchargez un fichier avec vos ${tickets.length} ticket(s), puis envoyez-le à la personne qui organise l'enquête.`}
         </p>
         <div className="btn-row">
           <button className="btn primary" onClick={() => exportXLSX(tickets)}>
@@ -387,14 +389,18 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onR
           <button className="btn" onClick={() => exportCSV(tickets)}>
             📄 CSV
           </button>
-          <button className="btn" onClick={() => exportJSON(tickets)}>
-            {'{ }'} JSON
-          </button>
+          {advanced && (
+            <button className="btn" onClick={() => exportJSON(tickets)}>
+              {'{ }'} JSON
+            </button>
+          )}
         </div>
       </div>
 
       <div className="card">
         <h2>Historique</h2>
+        {advanced && (
+          <>
         <p className="hint">
           Recherchez instantanément par produit, catégorie, code COICOP ou
           magasin.
@@ -427,6 +433,8 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onR
             ⚖️ Comparer
           </button>
         </div>
+          </>
+        )}
 
         {filtered.length === 0 && (
           <p className="muted">Aucun ticket ne correspond à « {query} ».</p>
@@ -438,14 +446,14 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onR
           return (
             <div key={t.id} style={{ borderBottom: '1px solid var(--slate-100)' }}>
               <div className="list-row">
-                <input
+                {advanced && <input
                   type="checkbox"
                   className="cmp-check"
                   checked={selected.includes(t.id)}
                   onChange={() => toggleSelect(t.id)}
                   title="Sélectionner pour comparer"
                   aria-label={`Comparer ${t.store}`}
-                />
+                />}
                 <button
                   className="btn"
                   style={{ padding: '4px 10px' }}
@@ -457,7 +465,7 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onR
                 <div className="lr-main">
                   <div className="lr-title">
                     {t.store}{' '}
-                    <span className={`pill engine ${ticketEngine(t)}`}>{engineLabel(ticketEngine(t))}</span>
+                    {advanced && <span className={`pill engine ${ticketEngine(t)}`}>{engineLabel(ticketEngine(t))}</span>}
                   </div>
                   <div className="lr-sub">
                     {formatDate(t.date)} · {(t.items || []).length} article(s)
@@ -490,9 +498,7 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onR
                         <th>Produit</th>
                         <th className="num">Qté</th>
                         <th className="num">Net</th>
-                        <th>COICOP</th>
-                        <th>Catégorie</th>
-                        <th>Confiance</th>
+                        {advanced ? <><th>COICOP</th><th>Catégorie</th><th>Confiance</th></> : <th>Catégorie</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -504,18 +510,20 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onR
                           </td>
                           <td className="num">{it.quantity}</td>
                           <td className="num">{formatEUR(it.net)}</td>
-                          <td>
-                            {it.coicop ? (
-                              <span className="pill coicop">{it.coicop}</span>
-                            ) : (
-                              <span className="muted">—</span>
-                            )}
-                          </td>
-                          <td>{it.category}</td>
-                          <td>
-                            {it.readConfidence != null && <ConfidenceBadge kind="read" value={it.readConfidence} />}{' '}
-                            <ConfidenceBadge kind="class" value={it.confidence} />
-                          </td>
+                          {advanced ? (
+                            <>
+                              <td>
+                                {it.coicop ? <span className="pill coicop">{it.coicop}</span> : <span className="muted">—</span>}
+                              </td>
+                              <td>{it.category}</td>
+                              <td>
+                                {it.readConfidence != null && <ConfidenceBadge kind="read" value={it.readConfidence} />}{' '}
+                                <ConfidenceBadge kind="class" value={it.confidence} />
+                              </td>
+                            </>
+                          ) : (
+                            <td>{it.coicop ? familyLabel(it.coicop) : <span className="muted">à classer</span>}</td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -527,9 +535,9 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onR
         })}
       </div>
 
-      <ReclassifyManager tickets={tickets} onUpdateTicket={onUpdateTicket} />
-      <BackupManager ticketCount={tickets.length} onReload={onReload} status={backupStatus} setStatus={setBackupStatus} />
-      <LearnedManager />
+      {advanced && <ReclassifyManager tickets={tickets} onUpdateTicket={onUpdateTicket} />}
+      {advanced && <BackupManager ticketCount={tickets.length} onReload={onReload} status={backupStatus} setStatus={setBackupStatus} />}
+      {advanced && <LearnedManager />}
 
       {comparing && pair.length === 2 && (
         <Compare

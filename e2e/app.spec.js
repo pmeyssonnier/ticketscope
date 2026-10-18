@@ -6,7 +6,9 @@ import fs from 'node:fs'
 // Premier lancement : le service worker s'installe, prend la main puis recharge la
 // page (autoUpdate). On attend ce rechargement pour ne pas agir sur une page
 // qui va disparaître ; chaque test part ainsi d'un état stable.
+// Ces scénarios testent l'interface complète : on active le mode avancé.
 async function openApp(page) {
+  await page.addInitScript(() => localStorage.setItem('ticketscope.advanced', '1'))
   await page.goto('/')
   await page.waitForFunction(() => navigator.serviceWorker?.controller, null, { timeout: 30_000 })
   await page.reload()
