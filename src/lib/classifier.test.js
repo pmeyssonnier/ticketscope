@@ -84,3 +84,19 @@ describe('correspondances apprises', () => {
   })
 })
 
+describe('correspondance approximative du dictionnaire vs règle précise', () => {
+  const mkItem = (raw) => ({ id: raw, raw, qty: 1, net: 1 })
+
+  it('« COUPE HOMME » n\'est pas la pomme du dictionnaire (« homme » ~ « pomme ») mais une coupe de cheveux', () => {
+    const [p] = classifyItems([mkItem('COUPE HOMME')])
+    expect(p.source).toBe('regle')
+    expect(p.coicop).toBe('13.1.3')
+    expect(p.needsReview).toBe(true)
+  })
+
+  it('sans règle précise, la correspondance approximative du dictionnaire reste proposée (à confirmer)', () => {
+    const [p] = classifyItems([mkItem('QUICHE OLTVES FETA')])
+    expect(p.source).toBe('dictionnaire')
+    expect(p.needsReview).toBe(true)
+  })
+})

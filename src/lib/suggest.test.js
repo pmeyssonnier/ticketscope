@@ -81,5 +81,49 @@ describe('suggestClassification — accessoires de chaussures', () => {
     expect(suggestClassification('Vinaigre balsamique')?.coicop).not.toBe('02.1.2')
     expect(suggestClassification('Thermos 1L')?.coicop).not.toBe('01.2.3')
   })
+
+  it('nouvelles classes : soins corporels, santé, carburant, restauration, ménage', () => {
+    const code = (n) => suggestClassification(n)?.coicop
+    expect(code('SHAMPOOING DOUX 250ML')).toBe('13.1.2')
+    expect(code('Dentifrice 75ml')).toBe('13.1.2')
+    expect(code('COUPE HOMME')).toBe('13.1.3')
+    expect(code('DAFALGAN 500MG 16 COMP')).toBe('06.1.1')
+    expect(code('Pansements 20 pcs')).toBe('06.1.2')
+    expect(code('DIESEL B7')).toBe('07.2.2')
+    expect(code('MENU ENFANT')).toBe('11.1.1')
+    expect(code('CANTINE SCOLAIRE')).toBe('11.1.2')
+    expect(code('DRAP HOUSSE 140X200')).toBe('05.2.1')
+    expect(code('BOUILLOIRE 1.7L')).toBe('05.3.2')
+    expect(code('ASSIETTE PLATE X6')).toBe('05.4.0')
+    expect(code('MARTEAU 500G')).toBe('05.5.2')
+  })
+
+  it('papier toilette et mouchoirs : soins corporels (13.1.2), pas produits ménagers (texte officiel)', () => {
+    expect(suggestClassification('PAPIER TOILETTE 12 ROULEAUX').coicop).toBe('13.1.2')
+    expect(suggestClassification('Mouchoirs en papier').coicop).toBe('13.1.2')
+    expect(suggestClassification('Sacs poubelle 30L').coicop).toBe('05.6.1')
+    expect(suggestClassification('Papier aluminium').coicop).toBe('05.6.1')
+  })
+
+  it('priorités : le mot précis l\'emporte sur le mot général', () => {
+    const code = (n) => suggestClassification(n)?.coicop
+    expect(code('Savon vaisselle citron')).toBe('05.6.1') // pas 13.1.2
+    expect(code('Savon de Marseille')).toBe('13.1.2')
+    expect(code('Lait corporel')).toBe('13.1.2') // pas 01.1.4
+    expect(code('Creme solaire SPF50')).toBe('13.1.2') // pas crème (01.1.4)
+    expect(code('Huile moteur 5W30')).toBe('07.2.2') // pas 01.1.5
+    expect(code('Huile d\'olive')).toBe('01.1.5')
+    expect(code('Cafetiere 12 tasses')).toBe('05.3.2') // pas café (01.2.2)
+    expect(code('Pince a linge x20')).toBe('05.6.1') // pas outillage
+  })
+
+  it('pas de faux positifs : bolognaise, essence de vanille, gingembre, pellets, science', () => {
+    const code = (n) => suggestClassification(n)?.coicop
+    expect(code('Sauce bolognaise')).toBe('01.1.9')
+    expect(code('Essence de vanille')).not.toBe('07.2.2')
+    expect(code('Gingembre frais')).not.toBe('13.1.2')
+    expect(code('Pellets de bois')).not.toBe('05.5.2')
+    expect(code('Science et vie')).not.toBe('05.5.2')
+  })
 })
 

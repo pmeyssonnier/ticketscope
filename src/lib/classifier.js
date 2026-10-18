@@ -120,27 +120,32 @@ export function classifyItem(item, learned = []) {
     }
   }
 
+  // Repli par règles : mots-clés génériques de catégorie (chemise, huile, lessive…). Un code
+  // est PRÉ-REMPLI mais jamais présenté comme sûr : la confiance reste sous le seuil, la
+  // ligne est « à confirmer ».
+  const rule = suggestClassification(item.raw)
+  const fromRule = () => ({
+    ...item,
+    normalized: titleFromRaw(item.raw),
+    brand: '',
+    coicop: rule.coicop,
+    coicopLabel: coicopLabel(rule.coicop),
+    category: rule.category,
+    confidence: rule.priority >= 1 ? RULE_CONFIDENCE : RULE_CONFIDENCE_GENERIC,
+    source: 'regle',
+    needsReview: true,
+  })
+
   if (bestEntry) {
+    // Une correspondance seulement approximative (faute OCR supposée : « pomme » ~ « homme »)
+    // cède la place à une règle précise (mot-clé exact d'une classe) ; une correspondance
+    // exacte du dictionnaire reste prioritaire.
+    if (bestScore <= FUZZY_MAX_SCORE && rule && rule.priority === 2) return fromRule()
     return decorate(item, bestEntry, bestScore, 'dictionnaire')
   }
 
-  // 3) Repli par règles : mots-clés génériques de catégorie (chemise, huile,
-  //    lessive…). Un code est PRÉ-REMPLI mais jamais présenté comme sûr : la
-  //    confiance reste sous le seuil, la ligne est « à confirmer ».
-  const rule = suggestClassification(item.raw)
-  if (rule) {
-    return {
-      ...item,
-      normalized: titleFromRaw(item.raw),
-      brand: '',
-      coicop: rule.coicop,
-      coicopLabel: coicopLabel(rule.coicop),
-      category: rule.category,
-      confidence: rule.priority >= 1 ? RULE_CONFIDENCE : RULE_CONFIDENCE_GENERIC,
-      source: 'regle',
-      needsReview: true,
-    }
-  }
+  // 3) Repli par règles.
+  if (rule) return fromRule()
 
   // 4) Inconnu -> à corriger.
   return {

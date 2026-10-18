@@ -54,3 +54,11 @@ fausse). « SAUCE TOMATE » reste `01.1.9` (sauces et condiments, `01.1.9.3`).
 « MCCAIN AIRFRY » reste en désaccord (dictionnaire `01.1.9`, référence `01.1.7`) :
 la structure officielle ne tranche pas les frites surgelées, à valider.
 
+## Tickets des classes ajoutées (2.9.9)
+
+`pharmacie-soins-synthetique` (06.1.x, 13.1.2) et `maison-auto-resto-synthetique` (05.x,
+07.2.2, 11.1.x, 13.1.3) sont annotés **par l'auteur des règles** : ils vérifient que chaque
+classe est atteignable et sans faux positif évident, pas qu'elle est juste sur de vrais
+tickets. Un vrai ticket n'a qu'un commerce ; ici les lignes sont mélangées pour couvrir les
+classes. À remplacer par des tickets réels dès qu'on en a.
+

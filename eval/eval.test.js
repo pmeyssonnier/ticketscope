@@ -35,6 +35,13 @@ describe('précision du pipeline local sur le jeu annoté', () => {
     expect(r.coverage).toBeGreaterThanOrEqual(0.95)
   })
 
+  it('classes ajoutées (santé, soins corporels, maison, carburant, restauration) : bien classées', () => {
+    for (const id of ['pharmacie-soins-synthetique', 'maison-auto-resto-synthetique']) {
+      expect(results[0].perTicket[id].coverage, id).toBeGreaterThanOrEqual(0.95)
+      expect(results[0].perTicket[id].coicopAccuracy, id).toBeGreaterThanOrEqual(0.9)
+    }
+  })
+
   it('tickets synthétiques : le repli par règles classe les vêtements et la plupart des courses', () => {
     expect(results[0].perTicket['vetements-synthetique'].coverage).toBeGreaterThanOrEqual(0.9)
     expect(results[0].perTicket['courses-synthetique'].coverage).toBeGreaterThanOrEqual(0.9)

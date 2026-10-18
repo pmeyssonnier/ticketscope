@@ -25,7 +25,21 @@ const RULES = [
   { p: 2, coicop: '02.1.3', category: 'Bière', kw: ['biere', 'pils', 'lager'] },
   { p: 2, coicop: '02.1.1', category: 'Spiritueux', kw: ['whisky', 'vodka', 'rhum', 'cognac', 'liqueur'] },
   { p: 2, coicop: '01.1.9', category: 'Sauces et condiments', kw: ['sauce', 'ketchup', 'mayonnaise', 'moutarde', 'vinaigre'] },
-  { p: 2, coicop: '05.6.1', category: "Produits d'entretien", kw: ['lessive', 'nettoyant', 'detergent', 'assouplissant', 'javel', 'vaisselle', 'desinfectant', 'anticalcaire', 'adoucissant', 'wc', 'savon menager'] },
+  // --- Soins corporels, santé, ménage, carburant, restauration (classes 2018 : 13.1.2, 13.1.3, 06.1.x, 05.x, 07.2.2, 11.1.x) ---
+  // Mots-clés tirés du texte officiel de chaque classe ; papier toilette et mouchoirs sont en 13.1.2
+  // (pas 05.6.1). Pas de mot-clé court qui ouvrirait un autre mot (« bol » → « bolognaise »).
+  { p: 2, coicop: '13.1.2', category: 'Soins corporels et hygiène', kw: ['shampooing', 'shampoing', 'dentifrice', 'brosse a dents', 'deodorant', 'gel douche', 'savon', 'rasoir', 'mousse a raser', 'creme solaire', 'creme visage', 'creme mains', 'lait corporel', 'mouchoir', 'papier toilette', 'parfum', 'maquillage', 'mascara', 'rouge a levres', 'vernis a ongles', 'demaquillant', 'lime a ongles', 'peigne', 'brosse a cheveux', 'laque', 'apres rasage', 'serviettes hygieniques', 'proteges slips', 'cotons tiges', 'coton demaquillant'] },
+  { p: 2, coicop: '13.1.3', category: 'Coiffure et soins de beauté', kw: ['coiffeur', 'coiffure', 'barbier', 'brushing', 'coupe homme', 'coupe femme', 'coupe enfant', 'manucure', 'pedicure'] },
+  { p: 2, coicop: '06.1.1', category: 'Médicaments', kw: ['medicament', 'comprime', 'gelule', 'paracetamol', 'ibuprofene', 'dafalgan', 'aspirine', 'pommade', 'antibiotique', 'homeopathie', 'sirop toux'] },
+  { p: 2, coicop: '06.1.2', category: 'Produits médicaux', kw: ['pansement', 'bandage', 'thermometre', 'test de grossesse', 'preservatif', 'masque chirurgical', 'compresse', 'seringue', 'tensiometre', 'bas de contention'] },
+  { p: 2, coicop: '07.2.2', category: 'Carburants et lubrifiants', kw: ['diesel', 'gasoil', 'sp95', 'sp98', 'e10', 'euro 95', 'euro95', 'carburant', 'huile moteur', 'lpg', 'autogas'] },
+  { p: 2, coicop: '11.1.1', category: 'Restaurants et cafés', kw: ['restaurant', 'plat du jour', 'menu'] },
+  { p: 2, coicop: '11.1.2', category: 'Cantines', kw: ['cantine', 'refectoire', 'cafeteria'] },
+  { p: 2, coicop: '05.2.1', category: 'Linge de maison', kw: ['drap', 'housse de couette', 'taie', 'plaid', 'couverture', 'rideau', 'serviette de bain', 'tapis de bain'] },
+  { p: 2, coicop: '05.3.2', category: 'Petits appareils ménagers', kw: ['grille pain', 'mixeur', 'blender', 'bouilloire', 'cafetiere', 'machine a cafe', 'robot de cuisine', 'friteuse', 'fer a repasser', 'ventilateur'] },
+  { p: 2, coicop: '05.4.0', category: 'Vaisselle et ustensiles', kw: ['verre', 'assiette', 'tasse', 'mug', 'fourchette', 'cuillere', 'couteau', 'casserole', 'poele', 'saladier', 'carafe', 'plat a four', 'moule a gateau'] },
+  { p: 2, coicop: '05.5.2', category: 'Outillage non motorisé', kw: ['marteau', 'tournevis', 'pince', 'echelle', 'arrosoir', 'rateau', 'secateur', 'ampoule'] },
+  { p: 2, coicop: '05.6.1', category: "Produits d'entretien", kw: ['lessive', 'nettoyant', 'detergent', 'assouplissant', 'javel', 'vaisselle', 'desinfectant', 'anticalcaire', 'adoucissant', 'wc', 'savon menager', 'essuie tout', 'papier aluminium', 'sacs poubelle', 'sac poubelle', 'bougie', 'eponge', 'pince a linge'] },
   { p: 1, coicop: '01.1.3', category: 'Poisson et fruits de mer', kw: ['poisson', 'saumon', 'thon', 'cabillaud', 'crevette', 'scampi', 'moule', 'surimi', 'tarama', 'colin', 'maquereau', 'sardine'] },
   { p: 1, coicop: '01.1.2', category: 'Viandes', kw: ['viande', 'boeuf', 'porc', 'poulet', 'dinde', 'jambon', 'saucisse', 'lardon', 'burger', 'steak', 'hache', 'charcuterie', 'salami', 'bacon', 'iberico', 'chorizo', 'merguez'] },
   { p: 1, coicop: '01.1.4', category: 'Produits laitiers et œufs', kw: ['lait', 'fromage', 'yaourt', 'yogurt', 'oeuf', 'beurre', 'creme', 'mozzarella', 'parmesan', 'parmigiano', 'comte', 'feta', 'skyr', 'chester', 'gouda', 'brie'] },
