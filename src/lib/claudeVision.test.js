@@ -146,6 +146,7 @@ describe('deux confiances : lecture et classement', () => {
     expect(p).not.toMatch(/boxer, chemise/i)
     expect(p).toMatch(/item_numbers/)
     expect(p).toMatch(/sous-vêtements.*03\.1\.2/)
+    expect(p).toMatch(/lacets.*03\.2\.1/)
     expect(p).toMatch(/jamais d'un autre prix/i)
   })
 })
@@ -160,13 +161,45 @@ describe('type d\'article d\'une promotion de lot', () => {
     expect(out.map((i) => i.normalized)).toEqual(['Boxer', 'Boxer', 'Daxfordmc Blue,xxl', 'Boxer', 'Pashan Blue Navy,xxl'])
   })
 
-  it('rattachement douteux (plus d\'articles visés que le « 3 x ») : rien n\'est modifié', () => {
+  it('tous les articles indiqués par le modèle (5 > « 3 x ») : la combinaison qui vérifie le prix du lot est retrouvée', () => {
+    // 3 × 7,99 = 23,97 = 19,99 (lot) + 3,98 (remise) ; seuls les articles 1, 2 et 4 le vérifient
     const out = namePromotedItems(items, [{ ...promo, item_numbers: [1, 2, 3, 4, 5] }])
-    expect(out.map((i) => i.normalized)).toEqual(items.map((i) => i.normalized))
+    expect(out.map((i) => i.normalized)).toEqual(['Boxer', 'Boxer', 'Daxfordmc Blue,xxl', 'Boxer', 'Pashan Blue Navy,xxl'])
   })
 
-  it('libellé sans « N x » ou sans articles visés : rien n\'est modifié', () => {
-    expect(namePromotedItems(items, [{ label: 'Remise carte', amount: -2, item_numbers: [] }])).toEqual(items)
-    expect(namePromotedItems(items, [{ ...promo, item_numbers: [] }])).toEqual(items)
+  it('articles indiqués faux (la chemise à 17,99 au lieu du 3e boxer) : corrigés par le calcul', () => {
+    const out = namePromotedItems(items, [{ ...promo, item_numbers: [1, 2, 3] }])
+    expect(out.map((i) => i.normalized)).toEqual(['Boxer', 'Boxer', 'Daxfordmc Blue,xxl', 'Boxer', 'Pashan Blue Navy,xxl'])
   })
+
+  it('ticket Celio réel (sauvegarde 17/10) : « Boxer\'s 3 x 19,99EUR », noms « Boxer\' », articles 1-2-3 indiqués', () => {
+    const celio = [
+      { raw: 'NIWOBIBOUP LIGHT PINK,XL', normalized: "Boxer'", quantity: 1, net: 7.99 },
+      { raw: 'MICUADRO BLUE SKY,XL', normalized: "Boxer'", quantity: 1, net: 7.99 },
+      { raw: 'DAXFORDMC BLUE,XXL', normalized: "Boxer'", quantity: 1, net: 17.99 },
+      { raw: 'DIBISTRIPE BLUE SKY,XL', normalized: 'Dibistripe', quantity: 1, net: 7.99 },
+      { raw: 'PASHAN BLUE NAVY,XXL', normalized: 'Pashan', quantity: 1, net: 29.99 },
+      { raw: 'LAPOUKI NAVY,XL', normalized: 'Lapouki', quantity: 1, net: 39.99 },
+    ]
+    const out = namePromotedItems(celio, [{ label: "Boxer's 3 x 19,99EUR", amount: -3.98, item_numbers: [1, 2, 3] }])
+    expect(out.map((i) => i.normalized)).toEqual(['Boxer', 'Boxer', 'Daxfordmc Blue,xxl', 'Boxer', 'Pashan', 'Lapouki'])
+  })
+
+  it('le modèle n\'indique aucun article : le calcul les retrouve quand la combinaison est unique', () => {
+    const out = namePromotedItems(items, [{ ...promo, item_numbers: [] }])
+    expect(out.map((i) => i.normalized)).toEqual(['Boxer', 'Boxer', 'Daxfordmc Blue,xxl', 'Boxer', 'Pashan Blue Navy,xxl'])
+  })
+
+  it('aucune combinaison ne vérifie le prix du lot : l\'indication du modèle est gardée, ou rien si elle est douteuse', () => {
+    const faux = { ...promo, amount: -1.23 } // incohérent avec les prix
+    const ok = namePromotedItems(items, [{ ...faux, item_numbers: [1, 2, 4] }])
+    expect(ok.map((i) => i.normalized)).toEqual(['Boxer', 'Boxer', 'Daxfordmc Blue,xxl', 'Boxer', 'Pashan Blue Navy,xxl'])
+    const trop = namePromotedItems(items, [{ ...faux, item_numbers: [1, 2, 3, 4, 5] }])
+    expect(trop.map((i) => i.normalized)).toEqual(items.map((i) => i.normalized))
+  })
+
+  it('libellé sans « N x » : rien n\'est modifié', () => {
+    expect(namePromotedItems(items, [{ label: 'Remise carte', amount: -2, item_numbers: [] }])).toEqual(items)
+  })
+
 })

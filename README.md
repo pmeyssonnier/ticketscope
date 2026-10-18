@@ -46,8 +46,10 @@ en option, qui envoie l'image du ticket à l'API Anthropic (voir plus bas).
   *Référentiel COICOP*).
 - 📏 **Format et prix unitaire normalisé** (€/kg, €/L, €/pièce), multipacks
   compris (`6 x 33 cl`).
-- ✏️ **Écran de correction** : produit, quantité, prix, remise, format, code
-  COICOP, catégorie. Chaque correction **enrichit la base** (auto-apprentissage
+- ✏️ **Écran de correction** : produit, **marque** (optionnelle : la marque du produit,
+  ex. Dash, McCain ; pour un vêtement d'une enseigne mono-marque, l'enseigne ; sinon
+  vide — elle est exportée dans la colonne `marque`), quantité, prix, remise, format,
+  code COICOP, catégorie. Chaque correction **enrichit la base** (auto-apprentissage
   local). Les lignes « à confirmer » se filtrent d'un clic ; on peut ajouter une
   ligne manquante à la main. **Sur téléphone**, les lignes sont des **fiches**
   (champs étiquetés, sans défilement horizontal) et une **barre collante** au-dessus
@@ -342,6 +344,14 @@ l'IA et **ne sont pas validés par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.9.11** — d'après une sauvegarde réelle : **apprentissage plus prudent** (corriger
+  seulement le nom d'une ligne dont le code est douteux n'apprend plus ce code ; seule une
+  classification choisie ou déjà sûre est mémorisée) ; **suggestion de code** aussi pour une
+  ligne au code douteux (ex. « Lacet… » proposé en `03.2.1` au lieu de `01.1.4`) ; champ
+  **Marque** éditable sur chaque ligne ; promotions de lot : le calcul (somme des articles =
+  prix du lot + remise) **corrige les articles visés** quand le modèle se trompe, et
+  « Boxer's » n'est plus lu « Boxer' » ; lacets et semelles en `03.2.1`, cirage en `05.6.1`,
+  réparation de chaussures en `03.2.2`.
 - **2.9.10** — tableau de bord : le camembert « Répartition par division COICOP » n'affiche
   plus que des pourcentages ; une **légende** donne le nom complet de chaque division, son
   montant et sa part (les noms longs étaient tronqués au premier mot sur téléphone).

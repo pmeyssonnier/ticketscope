@@ -6,7 +6,7 @@ import { unitPriceFor } from '../lib/units.js'
 import { ConfidenceBadge } from './ui.jsx'
 import ReviewCard from './ReviewCard.jsx'
 import useMediaQuery from '../lib/useMediaQuery.js'
-import { computeNeedsReview, recomputeAmounts, reviewSummary, formatGap } from '../lib/review.js'
+import { computeNeedsReview, recomputeAmounts, reviewSummary, formatGap, correctionsToLearn, shouldSuggest } from '../lib/review.js'
 
 const COICOP_OPTIONS = Object.keys(COICOP_LABELS)
 
@@ -132,18 +132,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
       totalDeclared: draft.totalDeclared,
       totalNet: totals.net,
     }
-    const corrections = items
-      .filter((it) => it.corrected && it.coicop && !it.manual && it.raw)
-      .map((it) => ({
-        raw: it.raw,
-        correction: {
-          normalized: it.normalized,
-          brand: it.brand,
-          coicop: it.coicop,
-          category: it.category,
-        },
-      }))
-    onSave(ticket, corrections)
+    onSave(ticket, correctionsToLearn(items))
   }
 
   return (
@@ -244,11 +233,18 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
                     placeholder="Produit…"
                     onChange={(e) => correctClassification(it.id, { normalized: e.target.value })}
                   />
+                  <input
+                    type="text"
+                    className="brand-input"
+                    value={it.brand || ''}
+                    placeholder="Marque (optionnel)"
+                    aria-label={`Marque : ${it.normalized || it.raw || 'ligne'}`}
+                    onChange={(e) => correctClassification(it.id, { brand: e.target.value })}
+                  />
                   <div className="raw">{it.manual ? '➕ ligne ajoutée' : `brut : ${it.raw}`}</div>
-                  {!it.coicop &&
-                    (() => {
+                  {(() => {
                       const s = suggestClassification(it.normalized || it.raw)
-                      return s ? (
+                      return shouldSuggest(it, s) ? (
                         <button
                           type="button"
                           className="suggest-chip"
