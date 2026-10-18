@@ -45,14 +45,18 @@ const RULES = [
   { p: 1, coicop: '01.1.2', category: 'Viandes', kw: ['viande', 'boeuf', 'porc', 'poulet', 'dinde', 'jambon', 'saucisse', 'lardon', 'burger', 'steak', 'hache', 'charcuterie', 'salami', 'bacon', 'iberico', 'chorizo', 'merguez'] },
   { p: 1, coicop: '01.1.4', category: 'Produits laitiers et œufs', kw: ['lait', 'fromage', 'yaourt', 'yogurt', 'oeuf', 'beurre', 'creme', 'mozzarella', 'parmesan', 'parmigiano', 'comte', 'feta', 'skyr', 'chester', 'gouda', 'brie'] },
   { p: 1, coicop: '01.1.5', category: 'Huiles et graisses', kw: ['huile', 'margarine', 'graisse'] },
-  { p: 1, coicop: '01.1.8', category: 'Confiserie', kw: ['chocolat', 'choco', 'bonbon', 'confiserie', 'biscuit', 'gateau', 'confiture', 'miel', 'pate a tartiner', 'nutella', 'eclair', 'patisserie', 'tarte', 'praline', 'cereales', 'sable', 'gaufre'] },
-  { p: 1, coicop: '01.1.7', category: 'Légumes', kw: ['legume', 'tomate', 'oignon', 'carotte', 'salade', 'courgette', 'poivron', 'concombre', 'patate', 'brocoli', 'epinard', 'champignon', 'olive', 'mesclun', 'gazpacho', 'haricot', 'poireau'] },
+  { p: 1, coicop: '01.1.8', category: 'Confiserie', kw: ['chocolat', 'choco', 'bonbon', 'confiserie', 'confiture', 'miel', 'pate a tartiner', 'nutella', 'praline'] },
+  // Biscuits, gâteaux, pâtisseries, gaufres : « pain et produits de boulangerie » (01.1.1.3) en COICOP 2018, pas confiserie.
+  { p: 2, coicop: '01.1.1', category: 'Biscuits et pâtisserie', kw: ['biscuit', 'gateau', 'eclair', 'patisserie', 'tarte', 'sable', 'gaufre', 'muffin', 'cookie'] },
+  { p: 1, coicop: '01.1.7', category: 'Légumes', kw: ['legume', 'tomate', 'oignon', 'carotte', 'salade', 'courgette', 'poivron', 'concombre', 'patate', 'brocoli', 'epinard', 'champignon', 'olive', 'mesclun', 'haricot', 'poireau', 'chips'] },
   { p: 1, coicop: '01.1.6', category: 'Fruits', kw: ['fruit', 'pomme', 'banane', 'fraise', 'orange', 'raisin', 'poire', 'kiwi', 'citron', 'peche', 'abricot', 'ananas', 'mangue', 'melon', 'cerise', 'framboise', 'myrtille'] },
-  { p: 1, coicop: '01.1.1', category: 'Pain et céréales', kw: ['pain', 'baguette', 'farine', 'riz', 'pates', 'couscous', 'biscotte', 'pistolet', 'croissant', 'viennoiserie', 'cereale'] },
+  { p: 1, coicop: '01.1.1', category: 'Pain et céréales', kw: ['pain', 'baguette', 'farine', 'riz', 'pates', 'couscous', 'biscotte', 'pistolet', 'croissant', 'viennoiserie', 'cereale', 'grissini', 'ravioli'] },
   { p: 1, coicop: '03.2.1', category: 'Chaussures', kw: ['chaussure', 'lacet', 'semelle', 'basket', 'sneaker', 'botte', 'bottine', 'sandale', 'mocassin', 'escarpin', 'pantoufle', 'tong', 'ballerine'] },
   { p: 1, coicop: '03.1.3', category: 'Accessoires', kw: ['ceinture', 'echarpe', 'bonnet', 'gant', 'cravate', 'casquette', 'chapeau', 'foulard', 'chaussette', 'collant', 'bretelle', 'noeud papillon'] },
   { p: 1, coicop: '03.1.2', category: 'Vêtements', kw: ['vetement', 'boxer', 'slip', 'calecon', 'chemise', 'chemisier', 'pantalon', 'jean', 'pull', 'gilet', 'cardigan', 'veste', 'manteau', 'blouson', 'parka', 'doudoune', 'imper', 'polo', 't shirt', 'tshirt', 'debardeur', 'sweat', 'jogging', 'legging', 'short', 'bermuda', 'jupe', 'robe', 'costume', 'blouse', 'pyjama', 'lingerie', 'soutien', 'maillot', 'peignoir', 'survet'] },
-  { p: 0, coicop: '01.1.9', category: 'Produits alimentaires divers', kw: ['sauce', 'chips', 'snack', 'soupe', 'plat', 'quiche', 'pizza', 'surgele', 'conserve', 'apero', 'aperitif', 'grissini', 'ravioli', 'bami', 'pesto', 'epice'] },
+  // Soupes prêtes à consommer (01.1.9.1) : le légume du nom (« soupe tomate ») ne décide pas.
+  { p: 2, coicop: '01.1.9', category: 'Soupes', kw: ['soupe', 'potage', 'gazpacho', 'veloute'] },
+  { p: 0, coicop: '01.1.9', category: 'Produits alimentaires divers', kw: ['sauce', 'snack', 'soupe', 'gazpacho', 'plat', 'quiche', 'pizza', 'surgele', 'conserve', 'apero', 'aperitif', 'bami', 'pesto', 'epice'] },
 ]
 
 // Correspondance d'un mot-clé de règle : mot entier (ou pluriel), pour éviter

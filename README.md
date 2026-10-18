@@ -300,16 +300,14 @@ signalées « à confirmer » et **calibration de la confiance**. `npm test` rej
 mesures avec des seuils (« cliquet ») : une régression fait échouer les tests.
 
 Mesures actuelles (codes COICOP 2018) : lignes et montants retrouvés à 100 % jusqu'à
-6 % de bruit ; sans bruit, **100 % de couverture** sur les trois tickets et **98 % de
-bons codes** (la seule erreur, « MCCAIN AIRFRY », est un code sûr du dictionnaire à
-valider) ; avec 6 % de bruit, 67 % de bons codes et 96 % des erreurs signalées « à
-confirmer ». Les codes à confiance haute sont justes à 95 %. Les deux tickets
-synthétiques des classes ajoutées (santé, maison, carburant, restauration) sont
-annotés par l'auteur des règles : la mesure y est optimiste. Limite connue : le
-classement local ignore l'enseigne, donc une bière au restaurant reste classée en
-bière (`02.1.3`) et non en restauration (`11.1.1`). Le repli par règles a
-fait passer la couverture du ticket de vêtements de 0 à 100 % et celle du ticket de
-courses de 13 à 100 %. Les codes de référence du ticket d'exemple viennent de
+6 % de bruit ; sans bruit, **100 % de couverture** et **100 % de bons codes** sur les cinq
+tickets (91 lignes) ; avec 6 % de bruit, 69 % de bons codes et toutes les erreurs signalées « à
+confirmer ». Ce 100 % est à relativiser : le dictionnaire, les règles et les références de
+l'évaluation ont été alignés sur le même texte officiel par la même personne (voir 2.9.12) ;
+c'est un garde-fou contre les régressions, pas une mesure de la justesse sur de vrais tickets.
+Les deux tickets synthétiques des classes ajoutées (santé, maison, carburant, restauration) sont
+annotés par l'auteur des règles. Limite connue : le classement local ignore l'enseigne, donc une
+bière au restaurant reste classée en bière (`02.1.3`) et non en restauration (`11.1.1`). Les codes de référence du ticket d'exemple viennent de
 l'IA et **ne sont pas validés par un humain** (voir `eval/README.md`).
 
 ## Vie privée et sécurité
@@ -344,6 +342,17 @@ l'IA et **ne sont pas validés par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.9.12** — classement alimentaire corrigé d'après le **texte officiel de la COICOP 2018**,
+  à partir d'un export réel : l'IA, quand elle hésitait, tombait sur le premier code de la liste
+  (« Pain et céréales », `01.1.1`) pour des quiches, des nouilles préparées, des olives ou un
+  américain préparé. (1) **Mode IA** : consignes précisées par famille de produits et défense de
+  prendre `01.1.1` par défaut ; (2) **dictionnaire sûr prioritaire** sur les lignes douteuses de
+  l'IA (`reconcileWithLocal`), automatiquement à l'import IA et par le bouton **« ↻ Revérifier avec
+  le dictionnaire »** de l'écran de correction (jamais sur une ligne que vous avez corrigée) ;
+  (3) **dictionnaire et règles recodés** quand le texte officiel contredisait : biscuits, gâteaux,
+  éclairs, gaufres et céréales de petit-déjeuner sont des produits de boulangerie (`01.1.1`), pas
+  de la confiserie ; chips et frites surgelées en `01.1.7` ; gazpacho et soupes en `01.1.9` ;
+  tarama en `01.1.3` ; grissini et ravioli frais en `01.1.1`.
 - **2.9.11** — d'après une sauvegarde réelle : **apprentissage plus prudent** (corriger
   seulement le nom d'une ligne dont le code est douteux n'apprend plus ce code ; seule une
   classification choisie ou déjà sûre est mémorisée) ; **suggestion de code** aussi pour une

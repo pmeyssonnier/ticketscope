@@ -6,7 +6,8 @@ import { unitPriceFor } from '../lib/units.js'
 import { ConfidenceBadge } from './ui.jsx'
 import ReviewCard from './ReviewCard.jsx'
 import useMediaQuery from '../lib/useMediaQuery.js'
-import { computeNeedsReview, recomputeAmounts, reviewSummary, formatGap, correctionsToLearn, shouldSuggest } from '../lib/review.js'
+import { computeNeedsReview, recomputeAmounts, reviewSummary, formatGap, correctionsToLearn, shouldSuggest, reconcileWithLocal } from '../lib/review.js'
+import { loadLearned } from '../lib/storage.js'
 
 const COICOP_OPTIONS = Object.keys(COICOP_LABELS)
 
@@ -15,6 +16,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
   const [date, setDate] = useState(draft.date || '')
   const [items, setItems] = useState(() => draft.items.map((it) => ({ ...it })))
   const [onlyReview, setOnlyReview] = useState(false)
+  const [recheckMsg, setRecheckMsg] = useState('')
   // Téléphone : fiches (sans défilement horizontal) et barre d'écart collante.
   const phone = useMediaQuery('(max-width: 640px)')
 
@@ -65,6 +67,17 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
     const it = items.find((x) => x.id === id)
     const name = it && it.normalized && it.normalized.trim() ? it.normalized : titleFromRaw(it ? it.raw : '')
     correctClassification(id, { normalized: name, coicop: s.coicop, category: s.category })
+  }
+
+  // Reclasse les lignes douteuses avec le dictionnaire sûr (voir reconcileWithLocal).
+  function recheck() {
+    const { items: next, changed } = reconcileWithLocal(items, loadLearned())
+    setItems(next)
+    setRecheckMsg(
+      changed
+        ? `✓ ${changed} ligne(s) reclassée(s) d'après le dictionnaire — à relire.`
+        : "Aucune ligne à reclasser : le dictionnaire n'a rien de plus sûr à proposer.",
+    )
   }
 
   function removeItem(id) {
@@ -169,6 +182,12 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
           ) : (
             <div style={{ paddingTop: 8, fontWeight: 700, color: '#15803d' }}>Tout est classé ✓</div>
           )}
+          {reviewCount > 0 && (
+            <button type="button" className="link-btn" onClick={recheck} title="Reclasser les lignes douteuses avec le dictionnaire (corrections apprises et produits connus)">
+              ↻ Revérifier avec le dictionnaire
+            </button>
+          )}
+          {recheckMsg && <div className="hint" role="status">{recheckMsg}</div>}
         </div>
       </div>
 

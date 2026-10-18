@@ -51,8 +51,8 @@ Trois lignes ont été recodées après confrontation à la source : « BUNDA GI
 `02.1.2` → `01.2.6` (soda ; `02.1.2` est le vin), « JUS ORANGE 1L » `02.1.2` →
 `01.2.1`, « CAFE MOULU 250G » `01.1.9` → `01.2.2` (mon annotation initiale était
 fausse). « SAUCE TOMATE » reste `01.1.9` (sauces et condiments, `01.1.9.3`).
-« MCCAIN AIRFRY » reste en désaccord (dictionnaire `01.1.9`, référence `01.1.7`) :
-la structure officielle ne tranche pas les frites surgelées, à valider.
+« MCCAIN AIRFRY » était en désaccord (dictionnaire `01.1.9`, référence `01.1.7`) : le texte
+officiel tranche (« chipped potatoes, frozen » = 01.1.7.9), le dictionnaire a été corrigé en 2.9.12.
 
 ## Tickets des classes ajoutées (2.9.9)
 
@@ -61,4 +61,13 @@ la structure officielle ne tranche pas les frites surgelées, à valider.
 classe est atteignable et sans faux positif évident, pas qu'elle est juste sur de vrais
 tickets. Un vrai ticket n'a qu'un commerce ; ici les lignes sont mélangées pour couvrir les
 classes. À remplacer par des tickets réels dès qu'on en a.
+
+## Recodage du 2026-10-18 (2.9.12)
+
+Deux lignes de `proxy-ocr` ont été recodées d'après le texte officiel de la COICOP 2018 :
+« BISCUITS SABLE BEU » `01.1.8` → `01.1.1` (les biscuits sont des produits de boulangerie,
+01.1.1.3) et « GAZPACHO VERDE 1L » `01.1.7` → `01.1.9` (soupe prête à consommer). Le dictionnaire
+a été corrigé dans le même sens (« MCCAIN AIRFRY » : frites surgelées = 01.1.7.9, ce qui supprime
+la dernière erreur de l'évaluation). Les références et le dictionnaire étant maintenant d'accord,
+l'évaluation sans bruit affiche 100 % : elle sert de garde-fou, pas de preuve de justesse.
 

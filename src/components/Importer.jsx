@@ -8,6 +8,7 @@ import { extractText, extractTextMulti } from '../lib/ocr.js'
 import { readReceiptWithClaude, AI_MODELS } from '../lib/claudeVision.js'
 import { parseFormat } from '../lib/units.js'
 import { attachReadConfidence } from '../lib/readConfidence.js'
+import { reconcileWithLocal } from '../lib/review.js'
 
 export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
   const [text, setText] = useState('')
@@ -87,6 +88,8 @@ export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
         onProgress: setProgress,
       })
       clearQueue()
+      // L'IA hésite parfois et tombe sur le premier code (« Pain et céréales ») : le dictionnaire sûr prime sur ses lignes douteuses.
+      draft.items = reconcileWithLocal(draft.items, loadLearned()).items
       if (draft.items.length) onDraft(draft)
       else setError("Claude n'a trouvé aucun produit sur cette image.")
     } catch (err) {
