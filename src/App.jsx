@@ -10,6 +10,7 @@ import {
   loadAiSettings,
   saveAiSettings,
 } from './lib/storage.js'
+import { loadAdvanced, saveAdvanced } from './lib/prefs.js'
 import { loadApiKey, saveApiKey, secretStorageKind } from './lib/secretStore.js'
 
 // Le tableau de bord embarque recharts (~350 ko) : chargé à la demande.
@@ -28,6 +29,8 @@ export default function App() {
   // La clé API vit en mémoire ; elle est chiffrée au repos (secretStore.js).
   const [ai, setAi] = useState(() => ({ ...loadAiSettings(), apiKey: '' }))
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // Parcours « famille » par défaut ; le mode avancé se règle dans les Réglages.
+  const [advanced, setAdvanced] = useState(() => loadAdvanced())
   // 'encrypted' | 'memory' | 'legacy' : voir secretStore.js
   const [keyKind, setKeyKind] = useState(secretStorageKind())
   // Vue de retour après enregistrement/annulation d'une correction :
@@ -130,7 +133,7 @@ export default function App() {
 
   // Mise à jour d'un ticket existant (ex. corrections depuis la comparaison).
   async function handleUpdateTicket(ticket) {
-    await persist(() => saveTicket(ticket))
+    return persist(() => saveTicket(ticket))
   }
 
   const reviewing = view === 'review' && draft
@@ -151,12 +154,24 @@ export default function App() {
       </header>
 
       {settingsOpen && (
-        <Settings ai={ai} updateAi={updateAi} keyKind={keyKind} onClose={() => setSettingsOpen(false)} />
+        <Settings
+          ai={ai}
+          updateAi={updateAi}
+          keyKind={keyKind}
+          advanced={advanced}
+          onAdvanced={(on) => {
+            saveAdvanced(on)
+            setAdvanced(on)
+          }}
+          onClose={() => setSettingsOpen(false)}
+        />
       )}
 
       <main>
         {reviewing ? (
           <ReviewTable
+            key={draft.id}
+            advanced={advanced}
             draft={draft}
             onSave={handleSave}
             onCancel={() => {
@@ -165,13 +180,14 @@ export default function App() {
             }}
           />
         ) : view === 'import' ? (
-          <Importer onDraft={handleDraft} ai={ai} updateAi={updateAi} onOpenSettings={() => setSettingsOpen(true)} />
+          <Importer onDraft={handleDraft} ai={ai} updateAi={updateAi} advanced={advanced} onOpenSettings={() => setSettingsOpen(true)} />
         ) : view === 'dashboard' ? (
           <Suspense fallback={<p className="hint">Chargement du tableau de bord…</p>}>
             <Dashboard tickets={tickets} />
           </Suspense>
         ) : (
           <History
+            advanced={advanced}
             tickets={tickets}
             onDelete={handleDelete}
             onEdit={handleEdit}

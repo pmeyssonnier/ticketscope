@@ -1,7 +1,7 @@
 import React from 'react'
 
 // Panneau de réglages (modal) : moteur de lecture, modèle IA, clé API.
-export default function Settings({ ai, updateAi, keyKind, onClose }) {
+export default function Settings({ ai, updateAi, keyKind, onClose, advanced, onAdvanced }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -12,6 +12,14 @@ export default function Settings({ ai, updateAi, keyKind, onClose }) {
           </button>
         </div>
 
+        <label className="toggle" style={{ marginBottom: 14 }}>
+          <input type="checkbox" checked={advanced} onChange={(e) => onAdvanced(e.target.checked)} />
+          <span>
+            Mode avancé <span className="muted">(codes COICOP, lecture par IA, reclassement, dictionnaire, sauvegardes)</span>
+          </span>
+        </label>
+
+        {advanced && (<>
         <label className="field">Moteur de lecture par défaut</label>
         <div className="engine-switch" style={{ marginBottom: 14 }}>
           <button
@@ -63,6 +71,8 @@ export default function Settings({ ai, updateAi, keyKind, onClose }) {
           ⚠️ En mode <b>✨ IA</b>, l'image du ticket est <b>envoyée à l'API Anthropic</b> (elle
           quitte l'appareil). Le mode <b>⚡ OCR local</b> reste 100 % hors-ligne.
         </p>
+
+        </>)}
 
         <div className="btn-row" style={{ marginTop: 16, justifyContent: 'flex-end' }}>
           <button className="btn primary" onClick={onClose}>

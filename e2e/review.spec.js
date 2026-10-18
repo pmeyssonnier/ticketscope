@@ -4,7 +4,9 @@ import path from 'node:path'
 // Écran de correction : fiches sur téléphone, tableau sur grand écran, barre
 // d'écart collante, confiance de lecture (OCR réel) distincte du classement.
 
+// Ces scénarios testent l'interface complète : on active le mode avancé.
 async function openApp(page) {
+  await page.addInitScript(() => localStorage.setItem('ticketscope.advanced', '1'))
   await page.goto('/')
   await page.waitForFunction(() => navigator.serviceWorker?.controller, null, { timeout: 30_000 })
   await page.reload()

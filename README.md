@@ -342,6 +342,14 @@ l'IA et **ne sont pas validés par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **3.0.0** — **parcours « famille » par défaut** : un seul geste pour importer (📷 Photographier), une vérification
+  réduite au total et aux seuls articles à vérifier, avec des catégories aux noms courants (sans code COICOP),
+  puis un export Excel/CSV à envoyer à l'organisateur de l'enquête. Codes, trois modes d'affichage, IA,
+  reclassement en masse, dictionnaire et sauvegardes passent dans **Réglages → Mode avancé**.
+- **2.11.0** — **reclassement en masse** des anciens tickets (Historique → « Reclasser les anciens tickets ») :
+  aperçu ligne par ligne, rien n'est écrit avant confirmation ; applique le dictionnaire et les corrections
+  apprises aux codes douteux, et une règle aux lignes sans code (qui restent « à confirmer »). Les lignes
+  corrigées ou ajoutées à la main ne sont jamais touchées.
 - **2.10.0** — écran de correction pour les **longs tickets** : trois modes (*Simplifié* : une ligne par
   article, ouvert par défaut au-delà de 10 lignes ; *Détaillé* ; *Contrôle des codes* : lignes groupées par
   code, avec reclassement de plusieurs lignes d'un coup) et un **sélecteur de classe avec recherche**

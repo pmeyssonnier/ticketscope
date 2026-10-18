@@ -10,7 +10,7 @@ import { parseFormat } from '../lib/units.js'
 import { attachReadConfidence } from '../lib/readConfidence.js'
 import { reconcileWithLocal } from '../lib/review.js'
 
-export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
+export default function Importer({ onDraft, ai, updateAi, onOpenSettings, advanced = true }) {
   const [text, setText] = useState('')
   const [queue, setQueue] = useState([]) // [{ id, url, file }]
   const [busy, setBusy] = useState(false)
@@ -169,13 +169,14 @@ export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
 
   return (
     <div className="card">
-      <h2>Importer un ticket</h2>
+      <h2>{advanced ? 'Importer un ticket' : 'Ajouter un ticket de caisse'}</h2>
       <p className="hint">
-        Photographiez le ticket (une ou plusieurs photos pour les longs tickets),
-        importez un PDF ou collez son texte. L'application lit le ticket, extrait
-        les produits, les normalise et leur attribue un code COICOP.
+        {advanced
+          ? "Photographiez le ticket (une ou plusieurs photos pour les longs tickets), importez un PDF ou collez son texte. L'application lit le ticket, extrait les produits, les normalise et leur attribue un code COICOP."
+          : 'Photographiez votre ticket de caisse bien à plat. Pour un long ticket, ajoutez plusieurs photos de haut en bas. Vous pourrez vérifier avant d’enregistrer.'}
       </p>
 
+      {advanced && (<>
       <div className="engine-switch">
         <button
           type="button"
@@ -207,19 +208,25 @@ export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
         </div>
       )}
 
+      </>)}
+
       <div className="import-actions">
-        <button className="btn primary" onClick={() => cameraRef.current?.click()} disabled={busy}>
-          📷 {queue.length ? 'Ajouter une photo' : 'Photographier'}
+        <button className={`btn primary ${advanced ? '' : 'big'}`} onClick={() => cameraRef.current?.click()} disabled={busy}>
+          📷 {queue.length ? 'Ajouter une photo' : 'Photographier mon ticket'}
         </button>
         <button className="btn" onClick={() => galleryRef.current?.click()} disabled={busy}>
           🖼️ Galerie
         </button>
-        <button className="btn" onClick={() => pdfRef.current?.click()} disabled={busy}>
-          📄 PDF
-        </button>
-        <button className="btn" onClick={() => txtRef.current?.click()} disabled={busy}>
-          📃 Texte
-        </button>
+        {advanced && (
+          <>
+            <button className="btn" onClick={() => pdfRef.current?.click()} disabled={busy}>
+              📄 PDF
+            </button>
+            <button className="btn" onClick={() => txtRef.current?.click()} disabled={busy}>
+              📃 Texte
+            </button>
+          </>
+        )}
       </div>
 
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={(e) => { addToQueue(e.target.files); e.target.value = '' }} style={{ display: 'none' }} />
@@ -227,7 +234,7 @@ export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
       <input ref={pdfRef} type="file" accept="application/pdf,.pdf" onChange={handlePdf} style={{ display: 'none' }} />
       <input ref={txtRef} type="file" accept=".txt,.csv,text/plain" onChange={onTxt} style={{ display: 'none' }} />
 
-      {!isClaude && (
+      {advanced && !isClaude && (
         <label className="toggle">
           <input type="checkbox" checked={enhance} onChange={(e) => setEnhance(e.target.checked)} disabled={busy} />
           <span>✨ Améliorer l'image avant lecture <span className="muted">(contraste, ombres, redressement — recommandé)</span></span>
@@ -281,7 +288,7 @@ export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
         </div>
       )}
 
-      {preview && (
+      {advanced && preview && (
         <div className="ocr-preview">
           <img src={preview} alt="Image optimisée pour l'OCR" />
           <span className="muted">Image telle que lue par l'OCR</span>
@@ -295,6 +302,8 @@ export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
         </div>
       )}
 
+      {advanced ? (
+        <>
       <label className="field" htmlFor="ticket-text" style={{ marginTop: 14 }}>
         Texte du ticket {text && <span className="muted">(vérifiable / modifiable avant analyse)</span>}
       </label>
@@ -332,6 +341,14 @@ export default function Importer({ onDraft, ai, updateAi, onOpenSettings }) {
           rien n'est envoyé sur Internet. Au tout premier usage, le moteur OCR
           (~3 Mo) et le modèle français se chargent puis restent disponibles hors
           connexion.
+        </p>
+      )}
+        </>
+      ) : (
+        <p className="family-sample">
+          <button type="button" className="link-btn" disabled={busy} onClick={() => analyze(SAMPLE_TICKET_TEXT)}>
+            🧾 Essayer avec un ticket d'exemple
+          </button>
         </p>
       )}
     </div>

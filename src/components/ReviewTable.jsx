@@ -7,12 +7,13 @@ import { ConfidenceBadge } from './ui.jsx'
 import ReviewCard from './ReviewCard.jsx'
 import CoicopPicker from './CoicopPicker.jsx'
 import CodesView from './CodesView.jsx'
+import FamilyReview from './FamilyReview.jsx'
 import { codesInTicket, SIMPLE_MODE_THRESHOLD } from '../lib/codeGroups.js'
 import useMediaQuery from '../lib/useMediaQuery.js'
 import { computeNeedsReview, recomputeAmounts, reviewSummary, formatGap, correctionsToLearn, shouldSuggest, reconcileWithLocal } from '../lib/review.js'
 import { loadLearned } from '../lib/storage.js'
 
-export default function ReviewTable({ draft, onSave, onCancel }) {
+export default function ReviewTable({ draft, onSave, onCancel, advanced = true }) {
   const [store, setStore] = useState(draft.store || '')
   const [date, setDate] = useState(draft.date || '')
   const [items, setItems] = useState(() => draft.items.map((it) => ({ ...it })))
@@ -20,6 +21,8 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
   // Au-delà de 10 lignes, on ouvre sur la liste simplifiée (une ligne par article).
   const [mode, setMode] = useState(() => (draft.items.length > SIMPLE_MODE_THRESHOLD ? 'simple' : 'detail'))
   const [openId, setOpenId] = useState(null)
+  // Parcours « famille » : vue simple par défaut ; « Modifier en détail » ouvre l'éditeur complet.
+  const [detailed, setDetailed] = useState(advanced)
   const [recheckMsg, setRecheckMsg] = useState('')
   // Téléphone : fiches (sans défilement horizontal) et barre d'écart collante.
   const phone = useMediaQuery('(max-width: 640px)')
@@ -65,6 +68,14 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
         return next
       }),
     )
+  }
+
+  // « C'est bon » : confirme le classement proposé et la lecture de la ligne.
+  function confirmItem(id) {
+    const it = items.find((x) => x.id === id)
+    if (!it) return
+    if (it.coicop) correctClassification(id, { coicop: it.coicop })
+    if (it.readConfidence != null) confirmRead(id)
   }
 
   // Reclassement groupé (écran de contrôle des codes).
@@ -163,6 +174,31 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
       totalNet: totals.net,
     }
     onSave(ticket, correctionsToLearn(items))
+  }
+
+  if (!detailed) {
+    return (
+      <FamilyReview
+        items={items}
+        store={store}
+        setStore={setStore}
+        date={date}
+        setDate={setDate}
+        summary={summary}
+        inTicket={inTicket}
+        onCorrect={correctClassification}
+        onUpdate={update}
+        onConfirmItem={confirmItem}
+        onRemove={removeItem}
+        onAdd={() => {
+          addItem()
+          // la nouvelle ligne est « à vérifier » : elle apparaît en tête de la liste
+        }}
+        onSave={save}
+        onCancel={onCancel}
+        onDetail={() => setDetailed(true)}
+      />
+    )
   }
 
   return (

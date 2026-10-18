@@ -3,6 +3,7 @@
 
 import { COICOP_LABELS, COICOP_DIVISIONS, coicopDivision } from '../data/coicop.js'
 import { normalizeStr } from './format.js'
+import { FAMILY_LABELS } from '../data/familyLabels.js'
 import { ruleKeywordsByCoicop } from './suggest.js'
 
 let keywordIndex = null
@@ -13,7 +14,7 @@ function keywords(code) {
 
 function haystack(code) {
   const div = COICOP_DIVISIONS[coicopDivision(code)] || ''
-  return normalizeStr(`${code} ${COICOP_LABELS[code]} ${div} ${keywords(code).join(' ')}`)
+  return normalizeStr(`${code} ${COICOP_LABELS[code]} ${div} ${(FAMILY_LABELS[code] || [])[1] || ''} ${keywords(code).join(' ')}`)
 }
 
 // Rang d'une classe pour la requête (0 = pas de correspondance, plus haut = mieux).

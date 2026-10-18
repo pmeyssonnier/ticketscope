@@ -2,11 +2,12 @@ import { createPortal } from 'react-dom'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { COICOP_LABELS } from '../data/coicop.js'
 import { searchCoicop, groupByDivision } from '../lib/coicopSearch.js'
+import { FAMILY_LABELS } from '../data/familyLabels.js'
 
 // Choix d'une classe COICOP : un bouton qui ouvre une fenêtre avec recherche
 // (code, titre, mot-clé de produit), au lieu d'une longue liste déroulante.
 // `suggested` : classes proposées pour la ligne ; `inTicket` : classes déjà utilisées dans le ticket.
-export default function CoicopPicker({ value, onChange, suggested = [], inTicket = [], label = 'Code COICOP', buttonClass = '', placeholder = '— choisir —' }) {
+export default function CoicopPicker({ value, onChange, suggested = [], inTicket = [], label = 'Code COICOP', buttonClass = '', placeholder = '— choisir —', friendly = false }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const inputRef = useRef(null)
@@ -21,6 +22,7 @@ export default function CoicopPicker({ value, onChange, suggested = [], inTicket
 
   const results = useMemo(() => (query.trim() ? searchCoicop(query) : null), [query])
   const groups = useMemo(() => groupByDivision(), [])
+  const flat = useMemo(() => Object.keys(COICOP_LABELS), [])
 
   function pick(code) {
     onChange(code)
@@ -35,7 +37,13 @@ export default function CoicopPicker({ value, onChange, suggested = [], inTicket
       className={`picker-opt ${code === value ? 'selected' : ''}`}
       onClick={() => pick(code)}
     >
-      <b>{code}</b> <span>{COICOP_LABELS[code]}</span>
+      {friendly ? (
+        <span>{FAMILY_LABELS[code][0]} {FAMILY_LABELS[code][1]}</span>
+      ) : (
+        <>
+          <b>{code}</b> <span>{COICOP_LABELS[code]}</span>
+        </>
+      )}
     </button>
   )
   const quick = (title, codes) => {
@@ -50,8 +58,10 @@ export default function CoicopPicker({ value, onChange, suggested = [], inTicket
 
   return (
     <>
-      <button type="button" className={`coicop-btn ${value ? '' : 'empty'} ${buttonClass}`} onClick={() => setOpen(true)} aria-label={`${label} : ${value || 'à choisir'}`}>
-        {value ? (
+      <button type="button" className={`coicop-btn ${value ? '' : 'empty'} ${buttonClass}`} onClick={() => setOpen(true)} aria-label={`${label} : ${(friendly && FAMILY_LABELS[value] ? FAMILY_LABELS[value][1] : value) || 'à choisir'}`}>
+        {value && friendly && FAMILY_LABELS[value] ? (
+          <span>{FAMILY_LABELS[value][0]} {FAMILY_LABELS[value][1]}</span>
+        ) : value ? (
           <>
             <b>{value}</b> <span>{COICOP_LABELS[value] || ''}</span>
           </>
@@ -67,7 +77,7 @@ export default function CoicopPicker({ value, onChange, suggested = [], inTicket
                 ref={inputRef}
                 type="search"
                 value={query}
-                placeholder="Rechercher : lait, bonde, 04.3, chaussures…"
+                placeholder={friendly ? 'Rechercher : lait, pain, chaussures…' : 'Rechercher : lait, bonde, 04.3, chaussures…'}
                 aria-label="Rechercher une classe"
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -91,12 +101,19 @@ export default function CoicopPicker({ value, onChange, suggested = [], inTicket
                   )}
                   {quick('💡 Suggérées', suggested)}
                   {quick('Dans ce ticket', inTicket)}
-                  {groups.map((g) => (
-                    <section className="picker-group" key={g.division}>
-                      <h4>{g.title}</h4>
-                      {g.codes.map(option)}
+                  {friendly ? (
+                    <section className="picker-group">
+                      <h4>Toutes les catégories</h4>
+                      {flat.map(option)}
                     </section>
-                  ))}
+                  ) : (
+                    groups.map((g) => (
+                      <section className="picker-group" key={g.division}>
+                        <h4>{g.title}</h4>
+                        {g.codes.map(option)}
+                      </section>
+                    ))
+                  )}
                 </>
               )}
             </div>
