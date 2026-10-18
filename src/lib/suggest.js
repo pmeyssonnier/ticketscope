@@ -39,6 +39,7 @@ const RULES = [
   { p: 2, coicop: '05.2.1', category: 'Linge de maison', kw: ['drap', 'housse de couette', 'taie', 'plaid', 'couverture', 'rideau', 'serviette de bain', 'tapis de bain'] },
   { p: 2, coicop: '05.3.2', category: 'Petits appareils ménagers', kw: ['grille pain', 'mixeur', 'blender', 'bouilloire', 'cafetiere', 'machine a cafe', 'robot de cuisine', 'friteuse', 'fer a repasser', 'ventilateur'] },
   { p: 2, coicop: '05.4.0', category: 'Vaisselle et ustensiles', kw: ['verre', 'assiette', 'tasse', 'mug', 'fourchette', 'cuillere', 'couteau', 'casserole', 'poele', 'saladier', 'carafe', 'plat a four', 'moule a gateau'] },
+  { p: 2, coicop: '04.3.1', category: 'Matériaux et fournitures de bricolage', kw: ['bonde', 'siphon', 'profile', 'profil alu', 'peinture', 'vernis bois', 'lasure', 'enduit', 'mastic', 'silicone', 'cheville', 'visserie', 'boulon', 'tuyau', 'raccord', 'robinet', 'colle carrelage', 'ciment', 'platre', 'plinthe', 'tasseau', 'cadenas', 'serrure'] },
   { p: 2, coicop: '05.5.2', category: 'Outillage non motorisé', kw: ['marteau', 'tournevis', 'pince', 'echelle', 'arrosoir', 'rateau', 'secateur', 'ampoule'] },
   { p: 2, coicop: '05.6.1', category: "Produits d'entretien", kw: ['lessive', 'nettoyant', 'detergent', 'assouplissant', 'javel', 'vaisselle', 'desinfectant', 'anticalcaire', 'adoucissant', 'wc', 'savon menager', 'essuie tout', 'papier aluminium', 'sacs poubelle', 'sac poubelle', 'bougie', 'eponge', 'pince a linge', 'cirage'] },
   { p: 1, coicop: '01.1.3', category: 'Poisson et fruits de mer', kw: ['poisson', 'saumon', 'thon', 'cabillaud', 'crevette', 'scampi', 'moule', 'surimi', 'tarama', 'colin', 'maquereau', 'sardine'] },
@@ -65,6 +66,13 @@ const RULES = [
 function ruleHit(norm, k) {
   if (k.includes(' ')) return hasWord(norm, k)
   return norm.split(' ').some((t) => t === k || t.startsWith(k))
+}
+
+// Mots-clés des règles regroupés par code (alimente la recherche d'une classe).
+export function ruleKeywordsByCoicop() {
+  const out = {}
+  for (const r of RULES) { const set = (out[r.coicop] ||= new Set()); r.kw.forEach((k) => set.add(k)) }
+  return Object.fromEntries(Object.entries(out).map(([c, set]) => [c, [...set]]))
 }
 
 export function suggestClassification(name) {

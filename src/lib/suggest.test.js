@@ -103,6 +103,10 @@ describe('suggestClassification — accessoires de chaussures', () => {
     expect(code('BOUILLOIRE 1.7L')).toBe('05.3.2')
     expect(code('ASSIETTE PLATE X6')).toBe('05.4.0')
     expect(code('MARTEAU 500G')).toBe('05.5.2')
+    expect(code('BONDE SIPHON PVC')).toBe('04.3.1')
+    expect(code('PROFILE ALU ROND 2M')).toBe('04.3.1')
+    expect(code('PEINTURE MURALE 2.5L')).toBe('04.3.1')
+    expect(code('VERNIS A ONGLES ROUGE')).toBe('13.1.2')
   })
 
   it('papier toilette et mouchoirs : soins corporels (13.1.2), pas produits ménagers (texte officiel)', () => {

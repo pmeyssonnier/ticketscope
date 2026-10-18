@@ -1,21 +1,25 @@
 import React, { useMemo, useState } from 'react'
-import { COICOP_LABELS, coicopLabel } from '../data/coicop.js'
+import { coicopLabel } from '../data/coicop.js'
 import { formatEUR, titleFromRaw, uid } from '../lib/format.js'
 import { suggestClassification } from '../lib/suggest.js'
 import { unitPriceFor } from '../lib/units.js'
 import { ConfidenceBadge } from './ui.jsx'
 import ReviewCard from './ReviewCard.jsx'
+import CoicopPicker from './CoicopPicker.jsx'
+import CodesView from './CodesView.jsx'
+import { codesInTicket, SIMPLE_MODE_THRESHOLD } from '../lib/codeGroups.js'
 import useMediaQuery from '../lib/useMediaQuery.js'
 import { computeNeedsReview, recomputeAmounts, reviewSummary, formatGap, correctionsToLearn, shouldSuggest, reconcileWithLocal } from '../lib/review.js'
 import { loadLearned } from '../lib/storage.js'
-
-const COICOP_OPTIONS = Object.keys(COICOP_LABELS)
 
 export default function ReviewTable({ draft, onSave, onCancel }) {
   const [store, setStore] = useState(draft.store || '')
   const [date, setDate] = useState(draft.date || '')
   const [items, setItems] = useState(() => draft.items.map((it) => ({ ...it })))
   const [onlyReview, setOnlyReview] = useState(false)
+  // Au-delà de 10 lignes, on ouvre sur la liste simplifiée (une ligne par article).
+  const [mode, setMode] = useState(() => (draft.items.length > SIMPLE_MODE_THRESHOLD ? 'simple' : 'detail'))
+  const [openId, setOpenId] = useState(null)
   const [recheckMsg, setRecheckMsg] = useState('')
   // Téléphone : fiches (sans défilement horizontal) et barre d'écart collante.
   const phone = useMediaQuery('(max-width: 640px)')
@@ -60,6 +64,18 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
         }
         return next
       }),
+    )
+  }
+
+  // Reclassement groupé (écran de contrôle des codes).
+  function bulkCorrect(ids, code) {
+    const set = new Set(ids)
+    setItems((prev) =>
+      prev.map((it) =>
+        set.has(it.id)
+          ? { ...it, coicop: code, coicopLabel: coicopLabel(code), confidence: 1, source: 'manuel', needsReview: false, corrected: true }
+          : it,
+      ),
     )
   }
 
@@ -118,6 +134,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
   const diff = summary.diff
   const reconciled = summary.reconciled
   const reviewCount = summary.reviewCount
+  const inTicket = useMemo(() => codesInTicket(items), [items])
   const visibleItems = onlyReview ? items.filter((it) => it.needsReview) : items
 
   function save() {
@@ -211,7 +228,46 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
         </div>
       )}
 
-      {phone ? (
+      <div className="mode-tabs" role="tablist" aria-label="Mode d'affichage">
+        {[['simple', 'Simplifié'], ['detail', 'Détaillé'], ['codes', 'Contrôle des codes']].map(([k, t]) => (
+          <button key={k} type="button" role="tab" aria-selected={mode === k} className={`mode-tab ${mode === k ? 'active' : ''}`} onClick={() => setMode(k)}>
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'codes' ? (
+        <CodesView items={items} onBulkCorrect={bulkCorrect} />
+      ) : mode === 'simple' ? (
+        <ul className="compact-list" data-testid="compact-list">
+          {visibleItems.map((it) => (
+            <li key={it.id} className={`crow ${it.needsReview ? 'review' : ''}`}>
+              <button
+                type="button"
+                className="crow-main"
+                aria-expanded={openId === it.id}
+                onClick={() => setOpenId((cur) => (cur === it.id ? null : it.id))}
+              >
+                <span className="crow-state" aria-label={it.needsReview ? 'À confirmer' : 'Classé'}>{it.needsReview ? '⚠' : '✓'}</span>
+                <span className="crow-name">{it.normalized || it.raw || 'ligne'}</span>
+                <span className="crow-code">{it.coicop || '—'}</span>
+                <span className="crow-net">{formatEUR(it.net)}</span>
+              </button>
+              {openId === it.id && (
+                <ReviewCard
+                  it={it}
+                  onUpdate={update}
+                  onCorrect={correctClassification}
+                  onSuggest={applySuggestion}
+                  onRemove={removeItem}
+                  onConfirmRead={confirmRead}
+                  inTicket={inTicket}
+                />
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : phone ? (
         <div className="rcards">
           {visibleItems.map((it) => (
             <ReviewCard
@@ -222,6 +278,7 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
               onSuggest={applySuggestion}
               onRemove={removeItem}
               onConfirmRead={confirmRead}
+              inTicket={inTicket}
             />
           ))}
         </div>
@@ -317,17 +374,12 @@ export default function ReviewTable({ draft, onSave, onCancel }) {
                   })()}
                 </td>
                 <td style={{ width: 110 }}>
-                  <select
-                    value={it.coicop || ''}
-                    onChange={(e) => correctClassification(it.id, { coicop: e.target.value || null })}
-                  >
-                    <option value="">— choisir —</option>
-                    {COICOP_OPTIONS.map((c) => (
-                      <option key={c} value={c}>
-                        {c} — {COICOP_LABELS[c]}
-                      </option>
-                    ))}
-                  </select>
+                  <CoicopPicker
+                    value={it.coicop}
+                    onChange={(code) => correctClassification(it.id, { coicop: code || null })}
+                    suggested={(() => { const f = suggestClassification(it.normalized || it.raw); return shouldSuggest(it, f) ? [f.coicop] : [] })()}
+                    inTicket={inTicket}
+                  />
                 </td>
                 <td style={{ minWidth: 140 }}>
                   <input
