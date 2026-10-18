@@ -650,7 +650,7 @@
       "provenance": "Ticket synthétique annoté à la main (articles de maison, outillage, carburant, restauration, coiffure ; classes 05.x, 07.2.2, 11.1.x, 13.1.3). Un vrai ticket n'a qu'un commerce : lignes mélangées pour couvrir les classes. Annoté par l'auteur des règles : mesure optimiste.",
       "store": "MIXTE",
       "date": "12/03/2026",
-      "declaredTotal": 212.0,
+      "declaredTotal": 252.9,
       "items": [
         {
           "raw": "MARTEAU 500G",
@@ -767,10 +767,34 @@
         {
           "raw": "COUPE HOMME",
           "quantity": 1,
-          "unitPrice": 22.0,
+          "unitPrice": 22,
           "discount": 0,
-          "net": 22.0,
+          "net": 22,
           "coicop": "13.1.3"
+        },
+        {
+          "raw": "BONDE SIPHON PVC",
+          "quantity": 1,
+          "unitPrice": 3.5,
+          "discount": 0,
+          "net": 3.5,
+          "coicop": "04.3.1"
+        },
+        {
+          "raw": "PROFILE ALU ROND 2M",
+          "quantity": 1,
+          "unitPrice": 12.5,
+          "discount": 0,
+          "net": 12.5,
+          "coicop": "04.3.1"
+        },
+        {
+          "raw": "PEINTURE MURALE BLANC 2.5L",
+          "quantity": 1,
+          "unitPrice": 24.9,
+          "discount": 0,
+          "net": 24.9,
+          "coicop": "04.3.1"
         }
       ]
     }

@@ -56,9 +56,9 @@ describe('référentiel COICOP 2018 versionné', () => {
     }
   })
 
-  it('39 classes proposées, dont les 11 ajoutées (restaurants, ménage, santé, soins, carburant)', () => {
-    expect(Object.keys(COICOP_LABELS)).toHaveLength(39)
-    for (const code of ['05.2.1', '05.3.2', '05.4.0', '05.5.2', '06.1.1', '06.1.2', '07.2.2', '11.1.1', '11.1.2', '13.1.2', '13.1.3']) {
+  it('40 classes proposées, dont 12 ajoutées (restaurants, ménage, santé, soins, carburant, bricolage)', () => {
+    expect(Object.keys(COICOP_LABELS)).toHaveLength(40)
+    for (const code of ['04.3.1', '05.2.1', '05.3.2', '05.4.0', '05.5.2', '06.1.1', '06.1.2', '07.2.2', '11.1.1', '11.1.2', '13.1.2', '13.1.3']) {
       expect(COICOP_LABELS[code], code).toBeTruthy()
     }
     expect(coicopLabel('11.1.1')).toBe('Restaurants, cafés et établissements similaires')

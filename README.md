@@ -273,7 +273,7 @@ janvier 2026), versionnée dans `src/data/` :
 L'empreinte SHA-256 de chaque fichier source est consignée dans les données.
 Règles de conduite :
 
-- **39 classes proposées** dans l'interface et au mode IA (`ACTIVE` dans
+- **40 classes proposées** dans l'interface et au mode IA (`ACTIVE` dans
   `coicop.js`) ; les autres codes officiels restent reconnus (import, export).
 - **Jamais de code inconnu présenté comme officiel** : un code hors référentiel est
   « non classé » en mode IA et signalé à l'import des sauvegardes.
@@ -342,6 +342,9 @@ l'IA et **ne sont pas validés par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.9.13** — nouvelle classe **`04.3.1` Matériaux et fournitures de bricolage** (bonde, siphon, profilés,
+  peinture, enduit, mastic, chevilles, tuyaux, serrures…) : règle de repli et consigne au mode IA ;
+  les outils à main restent en `05.5.2`. 40 classes proposées.
 - **2.9.12** — classement alimentaire corrigé d'après le **texte officiel de la COICOP 2018**,
   à partir d'un export réel : l'IA, quand elle hésitait, tombait sur le premier code de la liste
   (« Pain et céréales », `01.1.1`) pour des quiches, des nouilles préparées, des olives ou un
