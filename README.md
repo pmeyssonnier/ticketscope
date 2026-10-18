@@ -342,6 +342,10 @@ l'IA et **ne sont pas validés par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **2.10.0** — écran de correction pour les **longs tickets** : trois modes (*Simplifié* : une ligne par
+  article, ouvert par défaut au-delà de 10 lignes ; *Détaillé* ; *Contrôle des codes* : lignes groupées par
+  code, avec reclassement de plusieurs lignes d'un coup) et un **sélecteur de classe avec recherche**
+  (code, titre ou mot-clé de produit, classes suggérées et déjà présentes dans le ticket en tête).
 - **2.9.13** — nouvelle classe **`04.3.1` Matériaux et fournitures de bricolage** (bonde, siphon, profilés,
   peinture, enduit, mastic, chevilles, tuyaux, serrures…) : règle de repli et consigne au mode IA ;
   les outils à main restent en `05.5.2`. 40 classes proposées.

@@ -68,6 +68,13 @@ function ruleHit(norm, k) {
   return norm.split(' ').some((t) => t === k || t.startsWith(k))
 }
 
+// Mots-clés des règles regroupés par code (alimente la recherche d'une classe).
+export function ruleKeywordsByCoicop() {
+  const out = {}
+  for (const r of RULES) { const set = (out[r.coicop] ||= new Set()); r.kw.forEach((k) => set.add(k)) }
+  return Object.fromEntries(Object.entries(out).map(([c, set]) => [c, [...set]]))
+}
+
 export function suggestClassification(name) {
   const norm = normalizeStr(name)
   if (!norm || norm.replace(/[^a-z]/g, '').length < 3) return null

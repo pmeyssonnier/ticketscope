@@ -1,16 +1,14 @@
 import React from 'react'
-import { COICOP_LABELS } from '../data/coicop.js'
 import { formatEUR } from '../lib/format.js'
 import { suggestClassification } from '../lib/suggest.js'
 import { unitPriceFor } from '../lib/units.js'
 import { shouldSuggest } from '../lib/review.js'
 import { ConfidenceBadge } from './ui.jsx'
-
-const COICOP_OPTIONS = Object.keys(COICOP_LABELS)
+import CoicopPicker from './CoicopPicker.jsx'
 
 // Une ligne du ticket sous forme de fiche (téléphone) : champs étiquetés,
 // pleine largeur, sans défilement horizontal.
-export default function ReviewCard({ it, onUpdate, onCorrect, onSuggest, onRemove, onConfirmRead }) {
+export default function ReviewCard({ it, onUpdate, onCorrect, onSuggest, onRemove, onConfirmRead, inTicket = [] }) {
   const found = suggestClassification(it.normalized || it.raw)
   const suggestion = shouldSuggest(it, found) ? found : null
   const up = unitPriceFor(it)
@@ -74,17 +72,10 @@ export default function ReviewCard({ it, onUpdate, onCorrect, onSuggest, onRemov
         </div>
       </div>
 
-      <label className="rfull">
-        <span>Code COICOP</span>
-        <select value={it.coicop || ''} onChange={(e) => onCorrect(it.id, { coicop: e.target.value || null })}>
-          <option value="">— choisir —</option>
-          {COICOP_OPTIONS.map((c) => (
-            <option key={c} value={c}>
-              {c} — {COICOP_LABELS[c]}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="rfull">
+        <span className="rlabel">Code COICOP</span>
+        <CoicopPicker value={it.coicop} onChange={(code) => onCorrect(it.id, { coicop: code || null })} suggested={suggestion ? [suggestion.coicop] : []} inTicket={inTicket} />
+      </div>
       <label className="rfull">
         <span>Catégorie</span>
         <input type="text" value={it.category} onChange={(e) => onCorrect(it.id, { category: e.target.value })} />
