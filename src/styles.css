@@ -1188,3 +1188,32 @@ table.data td .raw {
   flex: none;
   padding: 10px 14px;
 }
+
+/* Légende du camembert des divisions COICOP : noms complets (retour à la ligne), part et montant. */
+.legend {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.legend li {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: start;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--slate-700);
+}
+.legend .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  margin-top: 3px;
+}
+.legend .lval {
+  color: var(--slate-500);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+

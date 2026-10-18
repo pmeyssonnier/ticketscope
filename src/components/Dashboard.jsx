@@ -32,6 +32,13 @@ function groupSum(rows, keyFn) {
 
 const eurTip = (v) => formatEUR(v)
 
+// Part en % (nombre entier), « 0 % » si le total est nul.
+const sharePct = (value, total) => `${total ? Math.round((value / total) * 100) : 0} %`
+
+// Étiquette sur le camembert : seulement le pourcentage (les noms complets sont dans la légende,
+// car des noms longs sont tronqués sur téléphone) ; masquée pour les parts de moins de 5 %.
+const pieLabel = ({ percent }) => (percent >= 0.05 ? `${Math.round(percent * 100)} %` : '')
+
 export default function Dashboard({ tickets }) {
   const rows = useMemo(() => flattenRows(tickets), [tickets])
 
@@ -46,6 +53,7 @@ export default function Dashboard({ tickets }) {
     () => groupSum(rows, (r) => coicopDivisionLabel(r.coicop)).sort((a, b) => b.value - a.value),
     [rows],
   )
+  const divisionTotal = useMemo(() => sumMoney(byDivision.map((d) => d.value)), [byDivision])
   const byCategory = useMemo(
     () => groupSum(rows, (r) => r.categorie).sort((a, b) => b.value - a.value).slice(0, 8),
     [rows],
@@ -89,7 +97,7 @@ export default function Dashboard({ tickets }) {
           <p className="csub">Part des dépenses par grand poste de consommation</p>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
-              <Pie data={byDivision} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={85} isAnimationActive={false} label={(d) => d.name.split(' ')[0]}>
+              <Pie data={byDivision} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={85} isAnimationActive={false} label={pieLabel}>
                 {byDivision.map((_, i) => (
                   <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
                 ))}
@@ -97,6 +105,17 @@ export default function Dashboard({ tickets }) {
               <Tooltip formatter={eurTip} />
             </PieChart>
           </ResponsiveContainer>
+          <ul className="legend" aria-label="Légende des divisions COICOP">
+            {byDivision.map((d, i) => (
+              <li key={d.name}>
+                <span className="dot" style={{ background: PALETTE[i % PALETTE.length] }} aria-hidden="true" />
+                <span className="lname">{d.name}</span>
+                <span className="lval">
+                  {formatEUR(d.value)} · {sharePct(d.value, divisionTotal)}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div className="chart-card">
