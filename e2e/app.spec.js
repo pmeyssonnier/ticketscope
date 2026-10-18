@@ -79,6 +79,28 @@ test('import : aperçu, anomalies listées, rien d\'écrit avant confirmation', 
   await expect(page.locator('nav .badge')).toHaveCount(0)
 })
 
+test('reclassement en masse : aperçu, rien d\'écrit avant confirmation, puis application', async ({ page }) => {
+  await openApp(page)
+  await openHistory(page)
+  const old = { id: 'q', raw: 'QUICHE SAUMON BROC', normalized: 'Quiche saumon', quantity: 1, unitPrice: 3.5, gross: 3.5, discount: 0, net: 3.5, coicop: '01.1.1', coicopLabel: 'Céréales', category: 'Pain et céréales', confidence: 0.4, source: 'ia' }
+  const file = { type: 'backup', version: 1, tickets: [{ id: 'old', createdAt: '2024-03-12T10:00:00Z', store: 'Proxy', date: '2024-03-12', items: [old] }], learned: [] }
+  await page.locator('input[type=file]').first().setInputFiles({ name: 'import.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(file)) })
+  await page.getByRole('button', { name: /Confirmer l'import/ }).click()
+  await page.getByRole('button', { name: /Analyser les tickets/ }).click()
+  const preview = page.getByTestId('reclass-preview')
+  await expect(preview).toContainText('1 ligne(s) à reclasser dans 1 ticket(s)')
+  await expect(preview).toContainText('01.1.1')
+  await expect(preview).toContainText('01.1.9')
+  // Décocher puis recocher : le bouton suit la sélection.
+  await preview.getByRole('checkbox').uncheck()
+  await expect(preview.getByRole('button', { name: /Appliquer \(0\)/ })).toBeDisabled()
+  await preview.getByRole('checkbox').check()
+  await preview.getByRole('button', { name: /Appliquer \(1\)/ }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'reclassée' })).toContainText('1 ligne(s) reclassée(s) dans 1 ticket(s)')
+  await page.getByRole('button', { name: /Analyser les tickets/ }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Rien à reclasser' })).toBeVisible()
+})
+
 test('hors ligne : l\'application se recharge depuis le service worker', async ({ page, context }) => {
   await openApp(page)
   await context.setOffline(true)

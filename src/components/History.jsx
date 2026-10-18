@@ -6,6 +6,104 @@ import { loadLearned, exportLearnedData, mergeLearned, clearLearned, loadLastBac
 import { ticketEngine, engineLabel } from '../lib/compare.js'
 import Compare from './Compare.jsx'
 import { ConfidenceBadge, Empty } from './ui.jsx'
+import { planReclassification, applyReclassification } from '../lib/bulkReclassify.js'
+
+// Reclassement en masse : propose, avec aperçu, de reclasser les lignes douteuses ou sans code des
+// tickets enregistrés. Rien n'est modifié avant confirmation.
+function ReclassifyManager({ tickets, onUpdateTicket }) {
+  const [plan, setPlan] = useState(null)
+  const [accepted, setAccepted] = useState(() => new Set())
+  const [status, setStatus] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  function analyse() {
+    const next = planReclassification(tickets, loadLearned())
+    setPlan(next)
+    setAccepted(new Set(next.changes.map((c) => c.key)))
+    setStatus(next.changes.length ? '' : "Rien à reclasser : aucune ligne douteuse n'a de meilleure proposition.")
+  }
+
+  function toggle(key) {
+    setAccepted((prev) => {
+      const n = new Set(prev)
+      n.has(key) ? n.delete(key) : n.add(key)
+      return n
+    })
+  }
+
+  async function apply() {
+    setBusy(true)
+    const changed = applyReclassification(tickets, loadLearned(), [...accepted])
+    let done = 0
+    for (const t of changed) {
+      if (!(await onUpdateTicket(t))) break
+      done += 1
+    }
+    setBusy(false)
+    setPlan(null)
+    setStatus(
+      done === changed.length
+        ? `✓ ${accepted.size} ligne(s) reclassée(s) dans ${done} ticket(s). Les lignes proposées par une règle restent « à confirmer ».`
+        : `Interrompu : ${done} ticket(s) sur ${changed.length} enregistré(s).`,
+    )
+  }
+
+  const byTicket = plan ? [...plan.changes.reduce((m, c) => m.set(c.ticketId, [...(m.get(c.ticketId) || []), c]), new Map()).values()] : []
+
+  return (
+    <div className="card">
+      <h2>Reclasser les anciens tickets</h2>
+      <p className="hint">
+        Applique le dictionnaire, vos corrections apprises et les règles actuelles aux lignes douteuses ou sans
+        code de vos tickets enregistrés. Vous voyez toutes les modifications avant de les appliquer ; vos
+        corrections manuelles ne sont jamais touchées. Pensez à exporter une sauvegarde avant.
+      </p>
+      <div className="btn-row">
+        <button className="btn" onClick={analyse} disabled={!tickets.length || busy}>
+          🔁 Analyser les tickets
+        </button>
+      </div>
+      {status && <p className="inline-note" role="status">{status}</p>}
+      {plan && plan.changes.length > 0 && (
+        <div className="reclass-preview" data-testid="reclass-preview">
+          <p>
+            <b>{plan.changes.length}</b> ligne(s) à reclasser dans <b>{plan.ticketCount}</b> ticket(s).
+          </p>
+          {byTicket.map((list) => (
+            <section className="code-group" key={list[0].ticketId}>
+              <header className="code-group-head">
+                <b>{list[0].store || 'Magasin inconnu'}</b>
+                <span className="muted">{list[0].date ? formatDate(list[0].date) : 'sans date'}</span>
+              </header>
+              <ul>
+                {list.map((c) => (
+                  <li key={c.key}>
+                    <label>
+                      <input type="checkbox" checked={accepted.has(c.key)} onChange={() => toggle(c.key)} aria-label={`Reclasser ${c.name}`} />
+                      <span className="cg-name">
+                        {c.name} <span className="muted">{c.from || '—'} → </span>
+                        <b>{c.to}</b> <span className="muted">{c.toLabel}</span>
+                        {c.kind === 'rule' && <span className="muted"> · 💡 par règle, à confirmer</span>}
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+          <div className="btn-row">
+            <button className="btn primary" onClick={apply} disabled={!accepted.size || busy}>
+              Appliquer ({accepted.size})
+            </button>
+            <button className="btn" onClick={() => setPlan(null)} disabled={busy}>
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 // Sauvegarde complète (tickets + dictionnaire appris) : export et import.
 // `status` vit dans History : l'écran change de structure (vide -> liste) pendant l'import.
@@ -268,7 +366,7 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onR
             Excel / CSV / JSON.
           </Empty>
         </div>
-        <BackupManager ticketCount={0} onReload={onReload} status={backupStatus} setStatus={setBackupStatus} />
+      <BackupManager ticketCount={0} onReload={onReload} status={backupStatus} setStatus={setBackupStatus} />
         <LearnedManager />
       </div>
     )
@@ -429,6 +527,7 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onR
         })}
       </div>
 
+      <ReclassifyManager tickets={tickets} onUpdateTicket={onUpdateTicket} />
       <BackupManager ticketCount={tickets.length} onReload={onReload} status={backupStatus} setStatus={setBackupStatus} />
       <LearnedManager />
 

@@ -130,7 +130,7 @@ export default function App() {
 
   // Mise à jour d'un ticket existant (ex. corrections depuis la comparaison).
   async function handleUpdateTicket(ticket) {
-    await persist(() => saveTicket(ticket))
+    return persist(() => saveTicket(ticket))
   }
 
   const reviewing = view === 'review' && draft
