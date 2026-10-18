@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeNeedsReview, recomputeAmounts, reviewSummary, formatGap, correctionsToLearn, shouldSuggest } from './review.js'
+import { computeNeedsReview, recomputeAmounts, reviewSummary, formatGap, correctionsToLearn, shouldSuggest, reconcileWithLocal } from './review.js'
 
 const eur = (n) => `${n.toFixed(2).replace('.', ',')} €`
 const item = (extra = {}) => ({ id: 'a', quantity: 1, unitPrice: 2, gross: 2, discount: 0, net: 2, coicop: '01.1.1', confidence: 0.95, ...extra })
@@ -110,6 +110,40 @@ describe('suggestion de code', () => {
     expect(shouldSuggest({ coicop: '01.1.4', confidence: 0.9 }, s)).toBe(false)
     expect(shouldSuggest({ coicop: '03.2.1', confidence: 0.45 }, s)).toBe(false)
     expect(shouldSuggest({ coicop: null }, null)).toBe(false)
+  })
+})
+
+describe('reclassement des lignes douteuses avec le dictionnaire', () => {
+  const l = (raw, coicop, confidence, extra = {}) => ({ raw, coicop, coicopLabel: 'x', category: 'x', confidence, source: 'ia', needsReview: true, ...extra })
+
+  it('ticket réel : quiches, bami goreng, mix d\'olives, américain classés « Pain et céréales » par l\'IA hésitante', () => {
+    const items = [l('QUICHE SAUMON BROC', '01.1.1', 0.6), l('DLL BAMI GORENG', '01.1.1', 0.7), l('DLL MIX VER NO OLI', '01.1.1', 0.55), l('AMERICIAH MARTINO', '01.1.1', 0.55)]
+    const { items: out, changed } = reconcileWithLocal(items)
+    expect(changed).toBe(4)
+    expect(out.map((i) => i.coicop)).toEqual(['01.1.9', '01.1.9', '01.1.7', '01.1.2'])
+    expect(out.every((i) => i.source === 'dictionnaire' && i.confidence >= 0.75)).toBe(true)
+  })
+
+  it('une IA sûre, une ligne corrigée ou manuelle, une remise, un code identique : inchangés', () => {
+    const items = [
+      l('QUICHE SAUMON BROC', '01.1.1', 0.9), // IA sûre
+      l('QUICHE OLIVES FETA', '01.1.1', 0.5, { corrected: true }), // corrigée par l'utilisateur
+      l('DLL BAMI GORENG', '01.1.1', 0.5, { source: 'manuel' }),
+      l('Boxer\'s 3 x 19,99EUR', '03.1.2', 0.5, { category: 'Remise' }),
+      l('QUICHE LORRAINE', '01.1.9', 0.5), // même code que le dictionnaire
+    ]
+    const { items: out, changed } = reconcileWithLocal(items)
+    expect(changed).toBe(0)
+    expect(out).toEqual(items)
+  })
+
+  it('le dictionnaire approximatif ou inconnu n\'écrase pas l\'IA ; une correction apprise, si', () => {
+    const inconnu = l('ZORGLUB MACHIN TRUC', '01.1.4', 0.6)
+    expect(reconcileWithLocal([inconnu]).changed).toBe(0)
+    const learned = [{ keywords: ['zorglub'], normalized: 'Zorglub', coicop: '01.1.9', category: 'Divers' }]
+    const { items: out, changed } = reconcileWithLocal([inconnu], learned)
+    expect(changed).toBe(1)
+    expect(out[0]).toMatchObject({ coicop: '01.1.9', source: 'appris' })
   })
 })
 

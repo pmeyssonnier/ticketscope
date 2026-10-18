@@ -3,7 +3,7 @@
   "tickets": [
     {
       "id": "proxy-ocr",
-      "provenance": "Ticket d'exemple du cahier des charges. Libellés : sortie d'un OCR réel. Codes COICOP : proposés par le mode IA de TicketScope (export du 2026-10-17), gardés seulement quand la confiance IA est ≥ 75 % (sinon null = ligne exclue des mesures de classement). NON validés par un humain : l'indicateur mesure l'accord avec l'IA, pas la justesse absolue — à relire pour en faire une vraie référence.",
+      "provenance": "Ticket d'exemple du cahier des charges. Libellés : sortie d'un OCR réel. Codes COICOP : proposés par le mode IA de TicketScope (export du 2026-10-17), gardés seulement quand la confiance IA est ≥ 75 % (sinon null = ligne exclue des mesures de classement). NON validés par un humain : l'indicateur mesure l'accord avec l'IA, pas la justesse absolue — à relire pour en faire une vraie référence. Recodage du 2026-10-18 d'après le texte officiel de la COICOP 2018 : « BISCUITS SABLE BEU » (biscuits = produits de boulangerie, 01.1.1) et « GAZPACHO VERDE » (soupe prête à consommer, 01.1.9).",
       "store": "PROXY",
       "date": "22/07/2025",
       "declaredTotal": 269.67,
@@ -118,7 +118,7 @@
           "unitPrice": 4.99,
           "discount": 0,
           "net": 4.99,
-          "coicop": "01.1.7"
+          "coicop": "01.1.9"
         },
         {
           "raw": "750ML BERTOLLI ALE",
@@ -182,7 +182,7 @@
           "unitPrice": 3.59,
           "discount": 0,
           "net": 3.59,
-          "coicop": "01.1.8"
+          "coicop": "01.1.1"
         },
         {
           "raw": "BERTAGNI RAVIOL EO",

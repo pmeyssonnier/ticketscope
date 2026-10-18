@@ -62,3 +62,12 @@ classe est atteignable et sans faux positif évident, pas qu'elle est juste sur 
 tickets. Un vrai ticket n'a qu'un commerce ; ici les lignes sont mélangées pour couvrir les
 classes. À remplacer par des tickets réels dès qu'on en a.
 
+## Recodage du 2026-10-18 (2.9.12)
+
+Deux lignes de `proxy-ocr` ont été recodées d'après le texte officiel de la COICOP 2018 :
+« BISCUITS SABLE BEU » `01.1.8` → `01.1.1` (les biscuits sont des produits de boulangerie,
+01.1.1.3) et « GAZPACHO VERDE 1L » `01.1.7` → `01.1.9` (soupe prête à consommer). Le dictionnaire
+a été corrigé dans le même sens (« MCCAIN AIRFRY » : frites surgelées = 01.1.7.9, ce qui supprime
+la dernière erreur de l'évaluation). Les références et le dictionnaire étant maintenant d'accord,
+l'évaluation sans bruit affiche 100 % : elle sert de garde-fou, pas de preuve de justesse.
+

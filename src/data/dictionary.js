@@ -22,7 +22,7 @@ export const PRODUCT_DICTIONARY = [
 
   // --- Légumes (01.1.7) ---
   { id: 'oignon', normalized: 'Oignon rouge', coicop: '01.1.7', category: 'Légumes', keywords: ['oignon'] },
-  { id: 'gazpacho', normalized: 'Gazpacho', coicop: '01.1.7', category: 'Légumes', keywords: ['gazpacho'] },
+  { id: 'gazpacho', normalized: 'Gazpacho', coicop: '01.1.9', category: 'Soupes', keywords: ['gazpacho'] },
   { id: 'mix-olives', normalized: "Mélange d'olives apéritif", coicop: '01.1.7', category: 'Apéritif / Olives', keywords: ['mix ver no oli', 'mix ver', 'mix olives'] },
   { id: 'tomates-vrac', normalized: 'Tomates fraîches', coicop: '01.1.7', category: 'Légumes', keywords: ['tomates charnues', 'tom charnue', 'tomate charnue'] },
   { id: 'mesclun', normalized: 'Mesclun', coicop: '01.1.7', category: 'Légumes', keywords: ['mesclun'] },
@@ -54,24 +54,24 @@ export const PRODUCT_DICTIONARY = [
   { id: 'iberico-burger', normalized: 'Iberico Burger', coicop: '01.1.2', category: 'Viandes', keywords: ['iberico'] },
 
   // --- Sucre, confiserie, petit-déjeuner, biscuits, pâtisserie (01.1.8) ---
-  { id: 'jord-crunch', normalized: 'Céréales Jord Crunch Choco', brand: 'Jord', coicop: '01.1.8', category: 'Petit-déjeuner', keywords: ['jord crunch', 'jord'] },
+  { id: 'jord-crunch', normalized: 'Céréales Jord Crunch Choco', brand: 'Jord', coicop: '01.1.1', category: 'Petit-déjeuner', keywords: ['jord crunch', 'jord'] },
   { id: 'chocolat-bio', normalized: 'Chocolat bio', coicop: '01.1.8', category: 'Confiserie', keywords: ['chocolat bio'] },
   { id: 'gusto-dubaich', normalized: 'Pâte de chocolat de Dubaï', brand: 'Gusto', coicop: '01.1.8', category: 'Confiserie', keywords: ['gusto dubaich', 'dubaich'] },
   { id: 'nocciolat', normalized: 'Pâte à tartiner chocolat bio', coicop: '01.1.8', category: 'Confiserie', keywords: ['nocciolat'] },
-  { id: 'crunchy-choco', normalized: 'Crunchy Choco', coicop: '01.1.8', category: 'Petit-déjeuner', keywords: ['crunchy choco', 'crunchy'] },
-  { id: 'biscuits-sables', normalized: 'Biscuits sablés au beurre', coicop: '01.1.8', category: 'Biscuits', keywords: ['biscuits sable', 'sable beu', 'sables beurre', 'sable beurre'] },
-  { id: 'eclair', normalized: 'Éclair au chocolat', coicop: '01.1.8', category: 'Pâtisserie', keywords: ['eclair'] },
+  { id: 'crunchy-choco', normalized: 'Crunchy Choco', coicop: '01.1.1', category: 'Petit-déjeuner', keywords: ['crunchy choco', 'crunchy'] },
+  { id: 'biscuits-sables', normalized: 'Biscuits sablés au beurre', coicop: '01.1.1', category: 'Biscuits', keywords: ['biscuits sable', 'sable beu', 'sables beurre', 'sable beurre'] },
+  { id: 'eclair', normalized: 'Éclair au chocolat', coicop: '01.1.1', category: 'Pâtisserie', keywords: ['eclair'] },
 
   // --- Boissons rafraîchissantes (01.2.6) ---
   { id: 'ginger-beer', normalized: 'Bunda Ginger Beer', brand: 'Bunda', coicop: '01.2.6', category: 'Boissons rafraîchissantes', keywords: ['ginger beer', 'bunda'] },
 
   // --- Produits alimentaires divers (01.1.9) ---
-  { id: 'chips-camembert', normalized: 'Chips Camembert', coicop: '01.1.9', category: 'Snacks', keywords: ['chips camembert', 'chips'] },
-  { id: 'grissini', normalized: 'Grissini', coicop: '01.1.9', category: 'Snacks', keywords: ['grissini'] },
+  { id: 'chips-camembert', normalized: 'Chips Camembert', coicop: '01.1.7', category: 'Snacks', keywords: ['chips camembert', 'chips'] },
+  { id: 'grissini', normalized: 'Grissini', coicop: '01.1.1', category: 'Pain et biscuits salés', keywords: ['grissini'] },
   { id: 'sauce-jambon', normalized: 'Sauce au jambon', coicop: '01.1.9', category: 'Produits alimentaires divers', keywords: ['sauce jambon', 'sauc ham', 'did sauc'] },
-  { id: 'ravioli', normalized: 'Ravioli frais Bertagni', brand: 'Bertagni', coicop: '01.1.9', category: 'Plats préparés', keywords: ['ravioli', 'bertagni'] },
-  { id: 'mccain', normalized: 'Frites McCain Airfry', brand: 'McCain', coicop: '01.1.9', category: 'Surgelés', keywords: ['mccain', 'airfry'] },
-  { id: 'tarama', normalized: 'Tarama', brand: 'Dili', coicop: '01.1.9', category: 'Épicerie', keywords: ['tarama'] },
+  { id: 'ravioli', normalized: 'Ravioli frais Bertagni', brand: 'Bertagni', coicop: '01.1.1', category: 'Pâtes fraîches', keywords: ['ravioli', 'bertagni'] },
+  { id: 'mccain', normalized: 'Frites McCain Airfry', brand: 'McCain', coicop: '01.1.7', category: 'Surgelés', keywords: ['mccain', 'airfry'] },
+  { id: 'tarama', normalized: 'Tarama', brand: 'Dili', coicop: '01.1.3', category: 'Poisson et fruits de mer', keywords: ['tarama'] },
   { id: 'bami-goreng', normalized: 'Bami Goreng préparé', brand: 'Dili', coicop: '01.1.9', category: 'Plats préparés', keywords: ['bami goreng', 'bami'] },
   { id: 'quiche-saumon', normalized: 'Quiche saumon-brocoli', coicop: '01.1.9', category: 'Plats préparés', keywords: ['quiche saumon'], mustAll: ['quiche', 'saumon'] },
   { id: 'quiche-olives', normalized: 'Quiche olives-feta', coicop: '01.1.9', category: 'Plats préparés', keywords: ['quiche olives', 'quiche olive'], mustAll: ['quiche', 'olive'] },

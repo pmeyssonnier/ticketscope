@@ -132,5 +132,23 @@ describe('suggestClassification — accessoires de chaussures', () => {
     expect(code('Pellets de bois')).not.toBe('05.5.2')
     expect(code('Science et vie')).not.toBe('05.5.2')
   })
+
+  it('COICOP 2018 : biscuits, gâteaux, éclairs = produits de boulangerie (01.1.1), pas confiserie', () => {
+    const code = (n) => suggestClassification(n)?.coicop
+    expect(code('Biscuits au chocolat')).toBe('01.1.1') // pas 01.1.8 malgré « chocolat »
+    expect(code('Gateau chocolat')).toBe('01.1.1')
+    expect(code('3+1 ECLAIR CHOCO')).toBe('01.1.1')
+    expect(code('Gaufres')).toBe('01.1.1')
+    expect(code('Tablette chocolat noir')).toBe('01.1.8')
+    expect(code('Miel de fleurs')).toBe('01.1.8')
+  })
+
+  it('COICOP 2018 : chips = légumes préparés (01.1.7.9), gazpacho = soupe prête à consommer (01.1.9)', () => {
+    const code = (n) => suggestClassification(n)?.coicop
+    expect(code('Chips nature 200g')).toBe('01.1.7')
+    expect(code('Gazpacho 1L')).toBe('01.1.9')
+    expect(code('Soupe tomate')).toBe('01.1.9')
+    expect(code('Frites surgelees')).toBeDefined()
+  })
 })
 

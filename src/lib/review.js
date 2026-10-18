@@ -1,6 +1,6 @@
 // Logique pure de l'écran de correction (partagée par le tableau et les fiches).
 
-import { REVIEW_THRESHOLD } from './classifier.js'
+import { REVIEW_THRESHOLD, classifyItem } from './classifier.js'
 import { mulMoney, sumMoney, diffMoney, sameMoney } from './money.js'
 
 // Une ligne est « à confirmer » si elle n'est pas classée, si la confiance de
@@ -66,5 +66,26 @@ export function shouldSuggest(it, suggestion) {
   if (!suggestion) return false
   if (!it.coicop) return true
   return (Number(it.confidence) || 0) < REVIEW_THRESHOLD && suggestion.coicop !== it.coicop
+}
+
+// Reclassement des lignes DOUTEUSES (confiance < seuil, souvent lues par l'IA) avec ce que le classement
+// local sait avec certitude : corrections apprises, ou dictionnaire à correspondance exacte. L'IA hésite
+// souvent et tombe alors sur le premier code de la liste (« Pain et céréales ») ; le dictionnaire, lui,
+// est exact. Une ligne que l'utilisateur a corrigée, une IA sûre, une remise ou un code identique ne
+// changent pas. Renvoie les lignes et le nombre de lignes reclassées.
+export function reconcileWithLocal(items, learned = []) {
+  let changed = 0
+  const out = items.map((it) => {
+    if (!it.raw || it.corrected || it.manual || it.source === 'manuel' || it.category === 'Remise') return it
+    if ((Number(it.confidence) || 0) >= REVIEW_THRESHOLD) return it
+    const local = classifyItem({ raw: it.raw }, learned)
+    if (local.source !== 'appris' && local.source !== 'dictionnaire') return it
+    if (!local.coicop || local.confidence < REVIEW_THRESHOLD || local.coicop === it.coicop) return it
+    changed += 1
+    const next = { ...it, coicop: local.coicop, coicopLabel: local.coicopLabel, category: local.category, confidence: local.confidence, source: local.source }
+    next.needsReview = computeNeedsReview(next)
+    return next
+  })
+  return { items: out, changed }
 }
 

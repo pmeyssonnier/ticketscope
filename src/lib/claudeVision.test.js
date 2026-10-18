@@ -147,6 +147,8 @@ describe('deux confiances : lecture et classement', () => {
     expect(p).toMatch(/item_numbers/)
     expect(p).toMatch(/sous-vêtements.*03\.1\.2/)
     expect(p).toMatch(/lacets.*03\.2\.1/)
+    expect(p).toMatch(/N'utilise PAS 01\.1\.1 par défaut/)
+    expect(p).toMatch(/01\.1\.9 = quiches/)
     expect(p).toMatch(/jamais d'un autre prix/i)
   })
 })

@@ -116,9 +116,9 @@ describe('classifyItems', () => {
     expect(dash.confidence).toBeGreaterThan(0.7)
   })
 
-  it('classe le tarama en 01.1.9 (base de référence)', () => {
+  it('classe le tarama (pâte d\'œufs de poisson) en 01.1.3 (COICOP 2018 : poissons et autres fruits de mer)', () => {
     const tarama = classified.find((i) => /tarama/i.test(i.raw))
-    expect(tarama.coicop).toBe('01.1.9')
+    expect(tarama.coicop).toBe('01.1.3')
   })
 
   it('classe le mélange d\'olives (Mix Ver) en 01.1.7 et la pâte de Dubaï en 01.1.8', () => {
@@ -133,7 +133,7 @@ describe('classifyItems', () => {
       { raw: '400GR TOM.CERISES', coicop: '01.1.7' },
       { raw: '3OO0ML DID SAUC HAM', coicop: '01.1.9' },
       { raw: 'AMERICIAN MARTINO', coicop: '01.1.2' },
-      { raw: 'BISCUITS SABLE BEU', coicop: '01.1.8' },
+      { raw: 'BISCUITS SABLE BEU', coicop: '01.1.1' }, // biscuits = produits de boulangerie (01.1.1.3), pas confiserie
     ]
     const out = classifyItems(
       raws.map((r) => ({ raw: r.raw, quantity: 1, unitPrice: 1, gross: 1, discount: 0, net: 1 })),
