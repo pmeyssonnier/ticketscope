@@ -342,6 +342,7 @@ l'IA et **ne sont pas validés par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **3.0.1** — **arrondi de caisse** : une ligne « Liquide arrondi » (espèces arrondies aux 5 centimes) n’est plus prise pour le total du ticket (consigne IA + analyse locale), et un écart de 1 à 2 centimes est accepté comme cohérent.
 - **3.0.0** — **parcours « famille » par défaut** : un seul geste pour importer (📷 Photographier), une vérification
   réduite au total et aux seuls articles à vérifier, avec des catégories aux noms courants (sans code COICOP),
   puis un export Excel/CSV à envoyer à l'organisateur de l'enquête. Codes, trois modes d'affichage, IA,

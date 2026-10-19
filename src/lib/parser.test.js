@@ -178,3 +178,16 @@ describe('parseTicket (régressions audit)', () => {
     expect(it.net).toBe(3)
   })
 })
+
+describe('arrondi de caisse', () => {
+  it("ignore la ligne « Liquide arrondi » : le total reste celui d'avant l'arrondi", () => {
+    const r = parseTicket(`Pharmacie Lambermont
+19-10-26
+1 ACETYLCYSTEINE EG 600MG 6.47
+1 DAKTARIN SPRAY 10.47
+Total a payer : 16.94
+Liquide arrondi 16.95`)
+    expect(r.totalDeclared).toBe(16.94)
+    expect(r.items).toHaveLength(2)
+  })
+})
