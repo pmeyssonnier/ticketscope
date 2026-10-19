@@ -3,6 +3,8 @@
 import { REVIEW_THRESHOLD, classifyItem } from './classifier.js'
 import { mulMoney, sumMoney, diffMoney, sameMoney } from './money.js'
 
+export const ROUNDING_TOLERANCE_CENTS = 2
+
 // Une ligne est « à confirmer » si elle n'est pas classée, si la confiance de
 // classement est faible, ou si la confiance de LECTURE (OCR / IA) est faible.
 // Les lignes de remise (promotions) n'ont pas de produit à classer.
@@ -35,7 +37,7 @@ export function reviewSummary(items, globalDiscountTotal, declared) {
     net,
     declared: hasDeclared ? declared : null,
     diff,
-    reconciled: hasDeclared && sameMoney(net, declared, 1), // tolérance : 1 centime d'arrondi
+    reconciled: hasDeclared && sameMoney(net, declared, ROUNDING_TOLERANCE_CENTS), // tolérance : arrondi de caisse belge (aux 5 centimes, ≤ 2 centimes)
     reviewCount: items.filter((it) => it.needsReview).length,
   }
 }

@@ -46,6 +46,7 @@ describe('reviewSummary', () => {
   })
   it('tolère 1 centime d\'arrondi', () => {
     expect(reviewSummary(items, 0, 14.01).reconciled).toBe(true)
+    expect(reviewSummary(items, 0, 14.02).reconciled).toBe(true) // arrondi de caisse belge
     expect(reviewSummary(items, 0, 14.05).reconciled).toBe(false)
   })
 })
@@ -71,7 +72,8 @@ describe('montants en centimes (review)', () => {
     expect(reviewSummary(items, 0, 1).reconciled).toBe(true)
     expect(reviewSummary(items, 0, 1).diff).toBe(0)
     expect(reviewSummary(items, 0, 1.01).reconciled).toBe(true) // 1 centime d'arrondi toléré
-    expect(reviewSummary(items, 0, 1.02).reconciled).toBe(false)
+    expect(reviewSummary(items, 0, 1.02).reconciled).toBe(true) // 2 centimes : arrondi de caisse
+    expect(reviewSummary(items, 0, 1.03).reconciled).toBe(false)
     expect(reviewSummary(items, 0, 1.02).diff).toBe(-0.02)
   })
 })

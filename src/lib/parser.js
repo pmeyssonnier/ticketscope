@@ -114,6 +114,8 @@ export function parseTicket(text) {
     const isTotal =
       matchesAny(norm, LINE_KEYWORDS.total) || /^tot(a|aa|al)/.test(norm)
     const isSubtotal = matchesAny(norm, LINE_KEYWORDS.subtotal)
+    // « Liquide arrondi 27,30 » : arrondi de caisse aux 5 centimes, pas un article ni le total.
+    if (/arrondi|afgerond/.test(norm)) { recap = true; continue }
     const isDiscount =
       parsed.amount < 0 || matchesAny(norm, LINE_KEYWORDS.discount)
     // Lignes d'en-tête / paiement (téléphone, TVA, moyen de paiement…).
