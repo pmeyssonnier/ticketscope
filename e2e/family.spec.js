@@ -128,6 +128,14 @@ test('« Produits par catégorie » : retrouver un produit non classé et le cor
   const group = block.getByTestId('pbc-group').first()
   await expect(group).toContainText('Non classé')
   await expect(group).toContainText('INCONNU XYZ TRUC')
+  // Les autres catégories ont un nom lisible (emoji + libellé simple), pas de caractère cassé.
+  const names = await block.getByTestId('pbc-group').locator('.pbc-head b').allTextContents()
+  expect(names.length).toBeGreaterThan(1)
+  for (const n of names) {
+    expect(n).not.toContain('\uFFFD')
+    expect(n.trim().length).toBeGreaterThan(3)
+  }
+  expect(names.join(' ')).toContain('Lait, fromages')
   await group.getByRole('button', { name: /Catégorie de/ }).click()
   await page.getByRole('searchbox').fill('fromage')
   await page.getByRole('dialog').getByRole('button', { name: /Lait, fromages/ }).first().click()
