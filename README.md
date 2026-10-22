@@ -273,7 +273,7 @@ janvier 2026), versionnée dans `src/data/` :
 L'empreinte SHA-256 de chaque fichier source est consignée dans les données.
 Règles de conduite :
 
-- **40 classes proposées** dans l'interface et au mode IA (`ACTIVE` dans
+- **41 classes proposées** dans l'interface et au mode IA (`ACTIVE` dans
   `coicop.js`) ; les autres codes officiels restent reconnus (import, export).
 - **Jamais de code inconnu présenté comme officiel** : un code hors référentiel est
   « non classé » en mode IA et signalé à l'import des sauvegardes.
@@ -342,6 +342,7 @@ l'IA et **ne sont pas validés par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **3.0.2** — **fleurs et eaux** : nouvelle classe `09.3.1` (fleurs, bouquets, plantes, terreau) ; l’eau est reconnue sous toutes ses écritures (minéralisée, de source, marques Spa, Vittel, Evian…) ; l’eau déminéralisée ou distillée (fer à repasser) va en `05.6.1`, pas en boisson. 41 classes proposées.
 - **3.0.1** — **arrondi de caisse** : une ligne « Liquide arrondi » (espèces arrondies aux 5 centimes) n’est plus prise pour le total du ticket (consigne IA + analyse locale), et un écart de 1 à 2 centimes est accepté comme cohérent.
 - **3.0.0** — **parcours « famille » par défaut** : un seul geste pour importer (📷 Photographier), une vérification
   réduite au total et aux seuls articles à vérifier, avec des catégories aux noms courants (sans code COICOP),
@@ -357,7 +358,7 @@ l'IA et **ne sont pas validés par un humain** (voir `eval/README.md`).
   (code, titre ou mot-clé de produit, classes suggérées et déjà présentes dans le ticket en tête).
 - **2.9.13** — nouvelle classe **`04.3.1` Matériaux et fournitures de bricolage** (bonde, siphon, profilés,
   peinture, enduit, mastic, chevilles, tuyaux, serrures…) : règle de repli et consigne au mode IA ;
-  les outils à main restent en `05.5.2`. 40 classes proposées.
+  les outils à main restent en `05.5.2`. 41 classes proposées.
 - **2.9.12** — classement alimentaire corrigé d'après le **texte officiel de la COICOP 2018**,
   à partir d'un export réel : l'IA, quand elle hésitait, tombait sur le premier code de la liste
   (« Pain et céréales », `01.1.1`) pour des quiches, des nouilles préparées, des olives ou un
