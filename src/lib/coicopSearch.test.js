@@ -4,7 +4,7 @@ import { groupItemsByCoicop, codesInTicket } from './codeGroups.js'
 
 describe('recherche d\'une classe COICOP', () => {
   it('sans requête, toutes les classes', () => {
-    expect(searchCoicop('')).toHaveLength(40)
+    expect(searchCoicop('')).toHaveLength(41)
   })
   it('par mot-clé de produit', () => {
     expect(searchCoicop('bonde')[0]).toBe('04.3.1')
@@ -25,7 +25,7 @@ describe('recherche d\'une classe COICOP', () => {
   it('groupe les classes par division, dans l\'ordre', () => {
     const g = groupByDivision()
     expect(g[0].division).toBe('01')
-    expect(g.flatMap((x) => x.codes)).toHaveLength(40)
+    expect(g.flatMap((x) => x.codes)).toHaveLength(41)
     expect(g.map((x) => x.division)).toEqual([...g.map((x) => x.division)].sort())
   })
 })

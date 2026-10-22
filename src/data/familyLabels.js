@@ -37,6 +37,7 @@ export const FAMILY_LABELS = {
   '06.1.1': ['💊', 'Médicaments'],
   '06.1.2': ['🩹', 'Pansements, tests, matériel médical'],
   '07.2.2': ['⛽', 'Carburant'],
+  '09.3.1': ['💐', 'Fleurs, plantes et jardin'],
   '11.1.1': ['🍴', 'Restaurant, café, snack'],
   '11.1.2': ['🏫', 'Cantine'],
   '13.1.2': ['🧼', 'Hygiène et soins (savon, shampooing…)'],

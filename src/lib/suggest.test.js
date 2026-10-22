@@ -156,3 +156,22 @@ describe('suggestClassification — accessoires de chaussures', () => {
   })
 })
 
+
+describe('fleurs et eaux', () => {
+  it.each([
+    ['BOUQUET FLEURS 7.99', '09.3.1'],
+    ['TULIPES X10', '09.3.1'],
+    ['ORCHIDEE', '09.3.1'],
+    ['EAU MINERALISEE 1.5L', '01.2.5'],
+    ['EAU DE SOURCE 2L', '01.2.5'],
+    ['VITTEL 1.5L', '01.2.5'],
+    ['SPA REINE 6X1.5L', '01.2.5'],
+  ])('%s -> %s', (name, code) => {
+    expect(suggestClassification(name)?.coicop).toBe(code)
+  })
+  it('ne confond pas chou-fleur, fleur de sel ni eau de toilette', () => {
+    expect(suggestClassification('MIEL DE FLEURS')?.coicop).not.toBe('09.3.1')
+    expect(suggestClassification('FLEUR DE SEL')?.coicop).not.toBe('09.3.1')
+    expect(suggestClassification('EAU DE TOILETTE')?.coicop).not.toBe('01.2.5')
+  })
+})
