@@ -21,7 +21,7 @@ export default function ProductsByCategory({ tickets, onUpdateTicket, friendly =
   const unclassified = all.filter((l) => !l.coicop).length
   const keys = [...selected].filter((k) => all.some((l) => l.id === k))
   const searching = query.trim() !== ''
-  const groupName = (g) => (g.code ? (friendly ? `${familyLabel(g.code)[0]} ${familyLabel(g.code)[1]}` : `${g.code} · ${g.label}`) : '❓ Non classé')
+  const groupName = (g) => (g.code ? (friendly ? familyLabel(g.code) : `${g.code} · ${g.label}`) : '❓ Non classé')
 
   function toggleGroup(code) {
     setExpanded((prev) => {
