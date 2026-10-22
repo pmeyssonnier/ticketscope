@@ -5,6 +5,7 @@ import { currentBackup, backupFilename, planImport, applyImport, describePlan, d
 import { loadLearned, exportLearnedData, mergeLearned, clearLearned, loadLastBackup, markBackupDone } from '../lib/storage.js'
 import { ticketEngine, engineLabel } from '../lib/compare.js'
 import Compare from './Compare.jsx'
+import ProductsByCategory from './ProductsByCategory.jsx'
 import { ConfidenceBadge, Empty } from './ui.jsx'
 import { familyLabel } from '../data/familyLabels.js'
 import { planReclassification, applyReclassification } from '../lib/bulkReclassify.js'
@@ -396,6 +397,8 @@ export default function History({ tickets, onDelete, onEdit, onUpdateTicket, onR
           )}
         </div>
       </div>
+
+      <ProductsByCategory tickets={tickets} onUpdateTicket={onUpdateTicket} friendly={!advanced} />
 
       <div className="card">
         <h2>Historique</h2>
