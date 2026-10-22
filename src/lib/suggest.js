@@ -17,6 +17,7 @@ import { coicopLabel } from '../data/coicop.js'
 const RULES = [
   { p: 2, coicop: '01.2.1', category: 'Jus', kw: ['jus', 'nectar'] },
   { p: 2, coicop: '01.2.5', category: 'Eau', kw: ['eau petillante', 'eau plate', 'eau gazeuse', 'eau minerale', 'eau mineralisee', 'eau de source', 'eau source', 'eau naturelle', 'spa reine', 'spa intense', 'vittel', 'evian', 'chaudfontaine', 'cristaline', 'contrex', 'perrier', 'badoit', 'volvic', 'valvert', 'bonneveine', 'hepar', 'san pellegrino'] },
+  { p: 2, coicop: '05.6.1', category: "Produits d'entretien", kw: ['eau demineralisee', 'eau distillee', 'demineralisee', 'distillee'] },
   { p: 2, coicop: '09.3.1', category: 'Fleurs et plantes', kw: ['bouquet', 'fleurs coupees', 'tulipes', 'roses', 'orchidee', 'plante', 'chrysantheme', 'pivoines', 'gerbera', 'tournesols', 'geranium', 'terreau'] },
   { p: 2, coicop: '01.2.6', category: 'Boissons rafraîchissantes', kw: ['soda', 'limonade', 'cola', 'sirop', 'ice tea', 'the glace', 'tonic', 'ginger'] },
   { p: 2, coicop: '01.2.9', category: 'Boissons sans alcool', kw: ['boisson'] },

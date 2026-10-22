@@ -163,6 +163,8 @@ describe('fleurs et eaux', () => {
     ['TULIPES X10', '09.3.1'],
     ['ORCHIDEE', '09.3.1'],
     ['EAU MINERALISEE 1.5L', '01.2.5'],
+    ['EAU DEMINERALISEE 5L', '05.6.1'],
+    ['EAU DISTILLEE', '05.6.1'],
     ['EAU DE SOURCE 2L', '01.2.5'],
     ['VITTEL 1.5L', '01.2.5'],
     ['SPA REINE 6X1.5L', '01.2.5'],
