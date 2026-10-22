@@ -1601,3 +1601,50 @@ table.data td .raw {
   flex: 1;
   min-width: 0;
 }
+
+/* Produits par catégorie (tous les tickets) */
+.pbc-toggle,
+.pbc-head {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  padding: 6px 0;
+  font: inherit;
+  text-align: left;
+  min-height: 44px;
+  cursor: pointer;
+}
+.pbc-toggle {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.pbc-all {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  min-height: 36px;
+}
+.code-group .pbc-list li {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 6px 10px 10px;
+  border-top: 1px solid var(--slate-200);
+}
+.pbc-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+.pbc-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  display: flex;
+  flex-direction: column;
+}
