@@ -134,7 +134,7 @@ ${list}
 - Deux certitudes distinctes, entre 0 et 1 :
   - "read_confidence" : ta certitude d'avoir bien LU la ligne (libellé, quantité, prix). Baisse-la si le texte est flou, coupé, ambigu ou si un chiffre est incertain, même si le produit est évident.
   - "class_confidence" : ta certitude que le code COICOP choisi est le bon pour ce produit, indépendamment de la qualité de lecture.
-- "date" au format AAAA-MM-JJ si lisible, sinon "". "total_paid" = total des articles après remises, AVANT l'arrondi de caisse : si le ticket montre un total puis une ligne « arrondi » / « liquide arrondi » (paiement en espèces arrondi aux 5 centimes), prends le total d'avant l'arrondi, pas le montant arrondi.
+- "date" au format AAAA-MM-JJ si lisible, sinon "". Les tickets belges écrivent la date JOUR/MOIS/ANNÉE (jamais mois/jour) : « 08/10/26 » = 8 octobre 2026, donc "2026-10-08". Si un chiffre est illisible (papier froissé), laisse "" plutôt que de deviner. "total_paid" = total des articles après remises, AVANT l'arrondi de caisse : si le ticket montre un total puis une ligne « arrondi » / « liquide arrondi » (paiement en espèces arrondi aux 5 centimes), prends le total d'avant l'arrondi, pas le montant arrondi.
 
 Réponds uniquement via le format JSON demandé.`
 }

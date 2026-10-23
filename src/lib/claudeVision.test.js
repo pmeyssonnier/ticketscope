@@ -81,6 +81,8 @@ describe('consigne au modèle (audit P1)', () => {
     expect(prompt).not.toContain('la somme des "net" de toutes les lignes')
   })
   it('les remises globales vont dans « promotions » (plus ignorées)', () => {
+    expect(prompt).toContain('JOUR/MOIS/ANNÉE')
+    expect(prompt).toContain('"2026-10-08"')
     expect(prompt).toContain('"item_numbers": []')
     expect(prompt).not.toMatch(/Ignore[^\n]*remises globales/)
   })

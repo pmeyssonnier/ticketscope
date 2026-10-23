@@ -342,6 +342,7 @@ l'IA et **ne sont pas validés par un humain** (voir `eval/README.md`).
 
 ## Nouveautés récentes
 
+- **3.1.2** — **date du ticket en mode IA** : la consigne précise que les tickets belges s’écrivent jour/mois/année (« 08/10/26 » = 8 octobre, et non 10 août) et de laisser la date vide si un chiffre est illisible, plutôt que de deviner.
 - **3.1.1** — correction : dans « Produits par catégorie » (parcours famille), les noms de catégories s’affichaient « ?? » (emoji coupé en deux) ; ils affichent maintenant l’emoji et le libellé simple.
 - **3.1.0** — **produits par catégorie** : dans l’Historique, une vue de tous les produits de tous les tickets, rangés par catégorie, « Non classé » en premier. On corrige une ligne ou plusieurs d’un coup (cases à cocher) ; la correction est enregistrée dans le ticket et mémorisée pour les prochains. Disponible dans le parcours famille (catégories en mots simples) comme en mode avancé.
 - **3.0.2** — **fleurs et eaux** : nouvelle classe `09.3.1` (fleurs, bouquets, plantes, terreau) ; l’eau est reconnue sous toutes ses écritures (minéralisée, de source, marques Spa, Vittel, Evian…) ; l’eau déminéralisée ou distillée (fer à repasser) va en `05.6.1`, pas en boisson. 41 classes proposées.
